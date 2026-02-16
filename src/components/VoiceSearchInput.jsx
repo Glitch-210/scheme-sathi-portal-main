@@ -30,7 +30,7 @@ const VoiceSearchInput = ({ className, placeholder = "Search schemes..." }) => {
         e.preventDefault();
         if (input.trim() && !showConfirm) {
             // Navigate to schemes page with query
-            navigate(`/schemes?q=${encodeURIComponent(input.trim())}`);
+            navigate(`/services?q=${encodeURIComponent(input.trim())}`);
             // Since we don't have a real backend search yet, this demonstrates the intent
             console.log("Searching for:", input);
         }

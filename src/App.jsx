@@ -58,6 +58,7 @@ const AdminGuard = ({ children }) => {
 const App = () => {
   const [isLoading, setIsLoading] = useState(true);
   const initTheme = useThemeStore((s) => s.initTheme);
+  const checkSession = useAuthStore((s) => s.checkSession); // Add checkSession
   const loadSchemes = useSchemeStore((s) => s.loadSchemes);
   const loadApplications = useApplicationStore((s) => s.loadApplications);
   const loadNotifications = useNotificationStore((s) => s.loadNotifications);
@@ -66,12 +67,14 @@ const App = () => {
   useEffect(() => {
     initTheme();
     // Seed all localStorage data + hydrate stores
+    // Seed all localStorage data + hydrate stores
     seedAllData();
+    checkSession(); // Call checkSession
     loadSchemes();
     loadApplications();
     loadNotifications();
     loadAuditLogs();
-  }, [initTheme, loadSchemes, loadApplications, loadNotifications, loadAuditLogs]);
+  }, [initTheme, checkSession, loadSchemes, loadApplications, loadNotifications, loadAuditLogs]);
 
   return (
     <QueryClientProvider client={queryClient}>

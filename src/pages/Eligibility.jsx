@@ -42,14 +42,8 @@ const Eligibility = () => {
 
     return (
         <Layout>
-            <div className="container py-6 md:py-10">
-                <Link to="/dashboard">
-                    <Button variant="ghost" size="sm" className="gap-2 mb-4">
-                        <ArrowLeft className="h-4 w-4" />
-                        Back to Dashboard
-                    </Button>
-                </Link>
-                <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-8 text-center md:text-left">Smart Scheme Eligibility</h1>
+            <div className="container py-10">
+                <h1 className="text-3xl font-bold text-center mb-8">Smart Scheme Eligibility</h1>
 
                 {loading && <p className="text-center">Analyzing your profile...</p>}
 

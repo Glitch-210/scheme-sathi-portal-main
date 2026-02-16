@@ -82,7 +82,7 @@ const Services = () => {
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2">{t('services')}</h1>
-        <p className="text-muted-foreground">Browse {schemes.length}+ government schemes and services</p>
+        <p className="text-muted-foreground">Browse {services.length}+ government schemes and services</p>
       </div>
 
       {/* Search & Filter Bar */}
