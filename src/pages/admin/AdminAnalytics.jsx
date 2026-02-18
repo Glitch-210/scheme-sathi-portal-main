@@ -5,14 +5,14 @@ import { hasPermission, ACTIONS } from '@/lib/rbac';
 import { useAnalyticsStore } from '@/stores/analyticsStore';
 
 // Analytics sections
-import KpiCards from '@/components/admin/analytics/KpiCards';
-import FilterPanel from '@/components/admin/analytics/FilterPanel';
-import ApplicationTrends from '@/components/admin/analytics/ApplicationTrends';
-import StatusDistribution from '@/components/admin/analytics/StatusDistribution';
-import TopSchemes from '@/components/admin/analytics/TopSchemes';
-import StateDistribution from '@/components/admin/analytics/StateDistribution';
-import ProcessingTime from '@/components/admin/analytics/ProcessingTime';
-import DropOffAnalysis from '@/components/admin/analytics/DropOffAnalysis';
+import KpiCards from '@/components/Admin/analytics/KpiCards';
+import FilterPanel from '@/components/Admin/analytics/FilterPanel';
+import ApplicationTrends from '@/components/Admin/analytics/ApplicationTrends';
+import StatusDistribution from '@/components/Admin/analytics/StatusDistribution';
+import TopSchemes from '@/components/Admin/analytics/TopSchemes';
+import StateDistribution from '@/components/Admin/analytics/StateDistribution';
+import ProcessingTime from '@/components/Admin/analytics/ProcessingTime';
+import DropOffAnalysis from '@/components/Admin/analytics/DropOffAnalysis';
 
 const AdminAnalytics = () => {
     const user = useAuthStore(s => s.user);
