@@ -24,7 +24,7 @@ const statusColors = {
 
 const Dashboard = () => {
   const { t } = useTranslation();
-  const { user, isAuthenticated } = useAuthStore();
+  const { user, isAuthenticated, isAuthChecking } = useAuthStore();
   const { getApplicationsByUser } = useApplicationStore();
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -48,6 +48,12 @@ const Dashboard = () => {
   }, [user, getApplicationsByUser]);
 
   const { searchSchemes } = useSchemeStore();
+
+  if (isAuthChecking) {
+    return <div className="flex h-screen items-center justify-center">
+      <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+    </div>;
+  }
 
   if (!isAuthenticated || !user) {
     return <Navigate to="/login" replace />;

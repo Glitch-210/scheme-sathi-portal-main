@@ -15,7 +15,7 @@ const ServiceDetail = () => {
   const { serviceId } = useParams();
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { user, isAuthenticated } = useAuthStore();
+  const { user, isAuthenticated, isAuthChecking } = useAuthStore();
   const { addApplication } = useApplicationStore();
   const { addNotification } = useNotificationStore();
   const [step, setStep] = useState('info');
@@ -31,6 +31,13 @@ const ServiceDetail = () => {
   const [verifiedDocs, setVerifiedDocs] = useState([]);
   const [applicationId, setApplicationId] = useState('');
   const { getById } = useSchemeStore();
+
+  if (isAuthChecking) {
+    return <div className="flex h-screen items-center justify-center">
+      <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+    </div>;
+  }
+
   if (!isAuthenticated || !user) {
     return <Navigate to="/login" replace />;
   }

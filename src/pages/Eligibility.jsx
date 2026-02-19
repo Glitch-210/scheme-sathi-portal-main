@@ -14,7 +14,8 @@ const Eligibility = () => {
         setLoading(true);
         setError(null);
         try {
-            const response = await fetch('http://localhost:5000/api/eligibility/check', {
+            const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '';
+            const response = await fetch(`${apiBaseUrl}/api/eligibility/check`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'

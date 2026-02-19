@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, Navigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -10,6 +9,7 @@ import Layout from '@/components/Layout/Layout';
 import { useTranslation, languageNames } from '@/hooks/useTranslation';
 import { useAuthStore } from '@/lib/store';
 import { toast } from 'sonner';
+
 const registerSchema = z.object({
   fullName: z.string().min(2, 'Name must be at least 2 characters'),
   mobile: z.string().regex(/^\d{10}$/, 'Enter valid 10-digit mobile number'),
@@ -25,8 +25,9 @@ const registerSchema = z.object({
 const Register = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { register: registerUser } = useAuthStore();
-  // const [otpValue, setOtpValue] = useState(''); // Removing OTP step for Supabase email signup
+  const { register: registerUser, isAuthenticated, isAuthChecking } = useAuthStore();
+
+  // Hooks MUST be called before any early returns (Rules of Hooks)
   const { register, handleSubmit, formState: { errors, isSubmitting }, setError } = useForm({
     resolver: zodResolver(registerSchema),
     defaultValues: {
@@ -34,17 +35,23 @@ const Register = () => {
     },
   });
 
-  const onSubmit = async (data) => {
-    // Direct registration with Supabase (Email/Password)
-    // Skipping OTP step as Supabase handles email verification sending (if enabled)
-    // or just creates the user.
+  if (isAuthChecking) {
+    return <div className="flex h-screen items-center justify-center">
+      <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+    </div>;
+  }
 
+  if (isAuthenticated) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  const onSubmit = async (data) => {
     try {
       const result = await registerUser({
         fullName: data.fullName,
         mobile: data.mobile,
         email: data.email,
-        password: data.mpin, // Using MPIN field as Password
+        password: data.mpin,
         language: data.language,
       });
 
@@ -61,8 +68,6 @@ const Register = () => {
       toast.error('An unexpected error occurred');
     }
   };
-
-  // Removing handleVerifyOtp as we are doing direct registration for this task scope
 
   return (<Layout showFooter={false}>
     <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center p-4 gradient-hero">

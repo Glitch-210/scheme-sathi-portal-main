@@ -30,7 +30,7 @@ const statusLabels = {
 const ApplicationDetail = () => {
     const { id } = useParams();
     const { t } = useTranslation();
-    const { user, isAuthenticated } = useAuthStore();
+    const { user, isAuthenticated, isAuthChecking } = useAuthStore();
     const { getApplicationsByUser } = useApplicationStore();
 
     const selectedApp = useMemo(() => {
@@ -39,6 +39,12 @@ const ApplicationDetail = () => {
         const allApps = [...userApps, ...mockApplications];
         return allApps.find(app => app.id === id);
     }, [id, user, getApplicationsByUser]);
+
+    if (isAuthChecking) {
+        return <div className="flex h-screen items-center justify-center">
+            <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+        </div>;
+    }
 
     if (!isAuthenticated || !user) {
         return <Navigate to="/login" replace />;

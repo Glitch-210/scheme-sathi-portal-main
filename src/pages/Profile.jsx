@@ -13,7 +13,7 @@ import { PlayCircle } from 'lucide-react';
 
 const Profile = () => {
   const { t } = useTranslation();
-  const { user, isAuthenticated, updateProfile, setLanguage } = useAuthStore();
+  const { user, isAuthenticated, isAuthChecking, updateProfile, setLanguage } = useAuthStore();
   const { restartTour } = useOnboarding();
   const [activeSection, setActiveSection] = useState('profile');
   const [formData, setFormData] = useState({
@@ -25,6 +25,13 @@ const Profile = () => {
     newMpin: '',
     confirmMpin: '',
   });
+
+  if (isAuthChecking) {
+    return <div className="flex h-screen items-center justify-center">
+      <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+    </div>;
+  }
+
   if (!isAuthenticated || !user) {
     return <Navigate to="/login" replace />;
   }

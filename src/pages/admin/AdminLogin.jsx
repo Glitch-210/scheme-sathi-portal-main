@@ -24,13 +24,17 @@ const AdminLogin = () => {
             return;
         }
         setLoading(true);
-        await new Promise(r => setTimeout(r, 800));
-        const result = adminLogin(email, password);
-        setLoading(false);
-        if (result.success) {
-            navigate('/admin');
-        } else {
-            setError(result.message);
+        try {
+            const result = await adminLogin(email, password);
+            if (result.success) {
+                navigate('/admin');
+            } else {
+                setError(result.error || 'Invalid credentials');
+            }
+        } catch (err) {
+            setError('An unexpected error occurred');
+        } finally {
+            setLoading(false);
         }
     };
 

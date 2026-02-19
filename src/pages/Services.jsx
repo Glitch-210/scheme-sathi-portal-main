@@ -14,7 +14,7 @@ const ITEMS_PER_PAGE = 24;
 
 const Services = () => {
   const { t } = useTranslation();
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, isAuthChecking } = useAuthStore();
   const [searchParams] = useSearchParams();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
@@ -72,6 +72,12 @@ const Services = () => {
     setSelectedState(e.target.value);
     setCurrentPage(1);
   };
+
+  if (isAuthChecking) {
+    return <div className="flex h-screen items-center justify-center">
+      <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+    </div>;
+  }
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;

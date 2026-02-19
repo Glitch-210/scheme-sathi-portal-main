@@ -18,8 +18,15 @@ const typeColors = {
 };
 const Notifications = () => {
   const { t } = useTranslation();
-  const { user, isAuthenticated } = useAuthStore();
+  const { user, isAuthenticated, isAuthChecking } = useAuthStore();
   const { getNotificationsByUser, markAsRead } = useNotificationStore();
+
+  if (isAuthChecking) {
+    return <div className="flex h-screen items-center justify-center">
+      <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+    </div>;
+  }
+
   if (!isAuthenticated || !user) {
     return <Navigate to="/login" replace />;
   }

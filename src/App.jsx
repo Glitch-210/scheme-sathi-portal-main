@@ -27,6 +27,7 @@ import { useThemeStore, useAuthStore, useApplicationStore, useNotificationStore,
 import { useSchemeStore } from "@/stores/schemeStore";
 import { useAuditStore } from "@/stores/auditStore";
 import { isAdminRole } from "@/lib/rbac";
+import { supabase } from "@/lib/supabase";
 
 // Admin pages
 import AdminLogin from "./pages/admin/AdminLogin";
@@ -43,7 +44,14 @@ const queryClient = new QueryClient();
 
 // Admin route guard — uses unified auth store
 const AdminGuard = ({ children }) => {
-  const { isAuthenticated, user } = useAuthStore();
+  const { isAuthenticated, user, isAuthChecking } = useAuthStore();
+
+  if (isAuthChecking) {
+    return <div className="flex items-center justify-center min-h-screen bg-background">
+      <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+    </div>;
+  }
+
   if (!isAuthenticated) return <Navigate to="/admin/login" replace />;
   if (!isAdminRole(user?.role)) return (
     <div className="flex items-center justify-center min-h-screen bg-background">
@@ -65,17 +73,43 @@ const App = () => {
   const loadNotifications = useNotificationStore((s) => s.loadNotifications);
   const loadAuditLogs = useAuditStore((s) => s.loadLogs);
 
+  /* Auth User state */
+  const user = useAuthStore((s) => s.user);
+
   useEffect(() => {
     initTheme();
-    // Seed all localStorage data + hydrate stores
-    // Seed all localStorage data + hydrate stores
     seedAllData();
-    checkSession(); // Call checkSession
+    checkSession();
     loadSchemes();
-    loadApplications();
-    loadNotifications();
-    loadAuditLogs();
-  }, [initTheme, checkSession, loadSchemes, loadApplications, loadNotifications, loadAuditLogs]);
+
+    // Listen for auth state changes (sign in, sign out, token refresh)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        useAuthStore.getState().setSession(session);
+        if (session?.user) {
+          // Re-check session to sync profile data
+          checkSession();
+        }
+      } else if (event === 'SIGNED_OUT') {
+        useAuthStore.getState().setUser(null);
+        useAuthStore.getState().setSession(null);
+        useAuthStore.setState({ isAuthenticated: false });
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [initTheme, checkSession, loadSchemes]);
+
+  // Load user-specific data when user is authenticated/available
+  useEffect(() => {
+    if (user) {
+      loadApplications();
+      loadNotifications();
+      loadAuditLogs();
+    }
+  }, [user, loadApplications, loadNotifications, loadAuditLogs]);
 
   return (
     <QueryClientProvider client={queryClient}>

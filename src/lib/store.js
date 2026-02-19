@@ -35,6 +35,7 @@ function applyTheme(theme) {
 export const useAuthStore = create()(persist((set, get) => ({
     user: null,
     isAuthenticated: false,
+    isAuthChecking: true, // verification in progress
     language: 'en',
     session: null,
 
@@ -49,50 +50,60 @@ export const useAuthStore = create()(persist((set, get) => ({
 
     /** Check current session */
     checkSession: async () => {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
-            set({ session, isAuthenticated: true });
-            // Fetch profile
-            const { data: profile } = await supabase
-                .from('profiles')
-                .select('*')
-                .eq('id', session.user.id)
-                .single();
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) {
+                set({ session, isAuthenticated: true });
+                // Fetch profile
+                const { data: profile } = await supabase
+                    .from('profiles')
+                    .select('*')
+                    .eq('id', session.user.id)
+                    .single();
 
-            if (profile) {
-                set({ user: { ...profile, email: session.user.email } });
+                if (profile) {
+                    set({ user: { ...profile, email: session.user.email } });
+                }
             }
+        } catch (error) {
+            if (import.meta.env.DEV) console.error('Session check failed:', error);
+        } finally {
+            set({ isAuthChecking: false });
         }
     },
 
     /** User login (mobile + password/mpin behavior) */
     login: async (email, password) => {
-        // Supabase uses email/password by default. Adapting to receive email.
-        const { data, error } = await supabase.auth.signInWithPassword({
-            email,
-            password,
-        });
-
-        if (error) {
-            console.error('Login error:', error);
-            return { success: false, error: error.message };
-        }
-
-        if (data.user) {
-            const { data: profile } = await supabase
-                .from('profiles')
-                .select('*')
-                .eq('id', data.user.id)
-                .single();
-
-            set({
-                user: { ...profile, email: data.user.email },
-                isAuthenticated: true,
-                session: data.session
+        try {
+            const { data, error } = await supabase.auth.signInWithPassword({
+                email,
+                password,
             });
-            return { success: true };
+
+            if (error) {
+                if (import.meta.env.DEV) console.error('Login error:', error);
+                return { success: false, error: error.message };
+            }
+
+            if (data.user) {
+                const { data: profile } = await supabase
+                    .from('profiles')
+                    .select('*')
+                    .eq('id', data.user.id)
+                    .single();
+
+                set({
+                    user: { ...profile, email: data.user.email },
+                    isAuthenticated: true,
+                    session: data.session
+                });
+                return { success: true };
+            }
+            return { success: false, error: 'Login failed' };
+        } catch (err) {
+            if (import.meta.env.DEV) console.error('Login exception:', err);
+            return { success: false, error: 'An unexpected error occurred' };
         }
-        return { success: false, error: 'Login failed' };
     },
 
     /** Register new user */
@@ -124,7 +135,7 @@ export const useAuthStore = create()(persist((set, get) => ({
                 }]);
 
             if (profileError) {
-                console.error('Profile creation error:', profileError);
+                if (import.meta.env.DEV) console.error('Profile creation error:', profileError);
                 return { success: true, warning: 'User created but profile failed' };
             }
 

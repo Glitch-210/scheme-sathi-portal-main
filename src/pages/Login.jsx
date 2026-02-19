@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, Navigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -10,6 +9,7 @@ import Layout from '@/components/Layout/Layout';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useAuthStore } from '@/lib/store';
 import { toast } from 'sonner';
+
 const loginSchema = z.object({
   email: z.string().email('Enter valid email address'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
@@ -18,12 +18,22 @@ const loginSchema = z.object({
 const Login = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { login } = useAuthStore();
+  const { login, isAuthenticated, isAuthChecking } = useAuthStore();
 
-  // Using isSubmitting to show loading state
+  // Hooks MUST be called before any early returns (Rules of Hooks)
   const { register, handleSubmit, formState: { errors, isSubmitting }, setError } = useForm({
     resolver: zodResolver(loginSchema),
   });
+
+  if (isAuthChecking) {
+    return <div className="flex h-screen items-center justify-center">
+      <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+    </div>;
+  }
+
+  if (isAuthenticated) {
+    return <Navigate to="/dashboard" replace />;
+  }
 
   const onSubmitMpin = async (data) => {
     try {
@@ -33,7 +43,6 @@ const Login = () => {
         navigate('/dashboard');
       } else {
         toast.error(result.error || 'Invalid credentials');
-        // Optional: set form error
         setError('root', { message: result.error });
       }
     } catch (err) {
@@ -44,7 +53,6 @@ const Login = () => {
   return (<Layout showFooter={false}>
     <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center p-4 gradient-hero">
       <Card className="w-full max-w-md animate-fade-in">
-        {/* ... Header ... */}
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
             <div className="flex h-14 w-14 items-center justify-center rounded-xl gradient-primary">
@@ -79,7 +87,6 @@ const Login = () => {
               Use your registered Email and Password
             </p>
           </form>
-
 
           <div className="mt-6 pt-6 border-t">
             <p className="text-center text-sm text-muted-foreground">
