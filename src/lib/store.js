@@ -52,8 +52,7 @@ export const useAuthStore = create()(persist((set, get) => ({
     checkSession: async () => {
         try {
             const { data: { session } } = await supabase.auth.getSession();
-            if (session) {
-                set({ session, isAuthenticated: true });
+            if (session?.user) {
                 // Fetch profile
                 const { data: profile } = await supabase
                     .from('profiles')
@@ -61,9 +60,16 @@ export const useAuthStore = create()(persist((set, get) => ({
                     .eq('id', session.user.id)
                     .single();
 
-                if (profile) {
-                    set({ user: { ...profile, email: session.user.email } });
-                }
+                set({
+                    session,
+                    isAuthenticated: true,
+                    // Ensure ID is always set from session, even if profile is missing
+                    user: {
+                        ...profile,
+                        id: session.user.id,
+                        email: session.user.email
+                    }
+                });
             }
         } catch (error) {
             if (import.meta.env.DEV) console.error('Session check failed:', error);
@@ -93,7 +99,11 @@ export const useAuthStore = create()(persist((set, get) => ({
                     .single();
 
                 set({
-                    user: { ...profile, email: data.user.email },
+                    user: {
+                        ...profile,
+                        id: data.user.id,
+                        email: data.user.email
+                    },
                     isAuthenticated: true,
                     session: data.session
                 });
@@ -218,7 +228,7 @@ export const useApplicationStore = create((set, get) => ({
 
     loadApplications: async () => {
         const user = useAuthStore.getState().user;
-        if (!user) return;
+        if (!user?.id) return;
 
         const { data, error } = await supabase
             .from('applications')

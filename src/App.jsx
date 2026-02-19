@@ -103,13 +103,15 @@ const App = () => {
   }, [initTheme, checkSession, loadSchemes]);
 
   // Load user-specific data when user is authenticated/available
+  // Load user-specific data when user is authenticated/available
   useEffect(() => {
-    if (user) {
+    if (user?.id) {
       loadApplications();
       loadNotifications();
+      // Only load audit logs if admin? Or just load them
       loadAuditLogs();
     }
-  }, [user, loadApplications, loadNotifications, loadAuditLogs]);
+  }, [user?.id, loadApplications, loadNotifications, loadAuditLogs]);
 
   return (
     <QueryClientProvider client={queryClient}>
