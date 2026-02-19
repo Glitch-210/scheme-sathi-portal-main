@@ -1,159 +1,264 @@
 import { Link, Navigate } from 'react-router-dom';
-import { Search, ArrowRight } from 'lucide-react';
+import { Search, ArrowRight, FileText, CheckCircle, Clock, XCircle, ChevronRight, LayoutDashboard } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Skeleton } from '@/components/ui/skeleton';
 import Layout from '@/components/Layout/Layout';
-import CategoryCard from '@/components/CategoryCard';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useAuthStore, useApplicationStore } from '@/lib/store';
-import { useSchemeStore, serviceCategories } from '@/stores/schemeStore';
-import { calculateMetrics, getMonthlyActivity, getStatusDistribution } from '@/lib/analytics';
-import StatsCards from '@/components/Dashboard/StatsCards';
-import AnalyticsCharts from '@/components/Dashboard/AnalyticsCharts';
+import { useSchemeStore } from '@/stores/schemeStore';
+import { calculateMetrics } from '@/lib/analytics';
 
-const statusColors = {
-  submitted: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-  'in-review': 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
-  verification: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
-  approved: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
-  completed: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
-  rejected: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+const statusConfig = {
+  submitted: { color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400', label: 'Submitted', icon: FileText },
+  'in-review': { color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400', label: 'In Review', icon: Clock },
+  verification: { color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400', label: 'Verification', icon: Clock },
+  approved: { color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400', label: 'Approved', icon: CheckCircle },
+  completed: { color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400', label: 'Completed', icon: CheckCircle },
+  rejected: { color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400', label: 'Rejected', icon: XCircle },
 };
 
 const Dashboard = () => {
   const { t } = useTranslation();
   const { user, isAuthenticated, isAuthChecking } = useAuthStore();
   const { getApplicationsByUser } = useApplicationStore();
+  const { schemes } = useSchemeStore();
   const [searchQuery, setSearchQuery] = useState('');
 
-  const { applications, analytics } = useMemo(() => {
-    if (!user) return { applications: [], analytics: null };
+  // --- Data Logic ---
+  const { applications, metrics, recentApps } = useMemo(() => {
+    if (!user?.id) return { applications: [], metrics: null, recentApps: [] };
 
-    const userApps = getApplicationsByUser(user.id);
-
-    // Sort by date (newest first)
+    const userApps = getApplicationsByUser(user.id) || [];
     const sortedApps = [...userApps].sort((a, b) => new Date(b.dateApplied) - new Date(a.dateApplied));
-
-    // Analytics
-    const metrics = calculateMetrics(sortedApps);
-    const monthlyData = getMonthlyActivity(sortedApps);
-    const statusData = getStatusDistribution(sortedApps);
 
     return {
       applications: sortedApps,
-      analytics: { metrics, monthlyData, statusData }
+      metrics: calculateMetrics(sortedApps),
+      recentApps: sortedApps.slice(0, 5) // Top 5
     };
-  }, [user, getApplicationsByUser]);
+  }, [user?.id, getApplicationsByUser]);
 
-  const { searchSchemes } = useSchemeStore();
+  const recommendedSchemes = useMemo(() => {
+    return schemes.slice(0, 5); // Just showing first 5 as "Recommended" for now
+  }, [schemes]);
 
+  // --- Loading & Auth States ---
   if (isAuthChecking) {
-    return <div className="flex h-screen items-center justify-center">
-      <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-    </div>;
+    return (
+      <Layout>
+        <div className="container py-8 space-y-8">
+          <Skeleton className="h-16 w-3/4 md:w-1/2" />
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-28 w-full" />)}
+          </div>
+          <Skeleton className="h-64 w-full" />
+        </div>
+      </Layout>
+    );
   }
 
   if (!isAuthenticated || !user) {
     return <Navigate to="/login" replace />;
   }
 
-  const recentApplications = applications.slice(0, 5); // Show 5 recent
-  const searchResults = searchQuery ? searchSchemes(searchQuery).slice(0, 5) : [];
+  // --- Helpers ---
+  const displayName = user.fullName || user.full_name || user.email?.split('@')[0] || 'User';
+  const firstName = displayName.split(' ')[0];
+  const currentDate = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
-  return (<Layout>
-    <div className="container py-6 md:py-10 space-y-10">
-      {/* Section 1: Welcome & Search */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-1">
-            {t('welcomeBack')}, {(user?.fullName || user?.full_name || user?.email?.split('@')[0] || 'User').split(' ')[0]}! 👋
-          </h1>
-          <p className="text-muted-foreground">
-            Here's what's happening with your applications.
-          </p>
-        </div>
+  return (
+    <Layout>
+      <div className="container py-8 md:py-12 space-y-10 max-w-6xl">
 
-        {/* Compact Search Bar */}
-        <div className="relative w-full md:w-96">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder={`${t('search')} services...`}
-            className="pl-10 h-10"
-          />
-          {searchResults.length > 0 && (<div className="absolute top-full left-0 right-0 mt-2 bg-card border rounded-lg shadow-soft z-10">
-            {searchResults.map((service) => (<Link key={service.id} to={`/service/${service.id}`} className="block px-4 py-3 hover:bg-muted transition-colors first:rounded-t-lg last:rounded-b-lg" onClick={() => setSearchQuery('')}>
-              <p className="font-medium text-foreground">{service.name}</p>
-              <p className="text-sm text-muted-foreground line-clamp-1">
-                {service.description}
-              </p>
-            </Link>))}
-          </div>)}
-        </div>
-      </div>
+        {/* SECTION 1: Welcome Header */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 pb-6 border-b">
+          <div className="space-y-1">
+            <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+              {currentDate}
+            </h2>
+            <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground">
+              Welcome back, {firstName} 👋
+            </h1>
+            <p className="text-muted-foreground max-w-xl">
+              Here's an overview of your recent activity and applications.
+            </p>
+          </div>
 
-      {/* Section 2: Key Metrics */}
-      {analytics && <StatsCards metrics={analytics.metrics} />}
-
-      {/* Section 3: Analytics Graphs */}
-      {analytics && <AnalyticsCharts monthlyData={analytics.monthlyData} statusData={analytics.statusData} />}
-
-      {/* Section 4: Recent Applications */}
-      <div>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold text-foreground">{t('recentApplications')} ({applications.length})</h2>
-          <Link to="/applications" className="text-primary text-sm font-medium flex items-center gap-1 hover:underline">
-            View all <ArrowRight className="h-4 w-4" />
+          <Link to="/profile">
+            <div className="flex items-center gap-3 p-2 pr-4 bg-muted/50 rounded-full hover:bg-muted transition-colors border border-transparent hover:border-border cursor-pointer">
+              <Avatar className="h-10 w-10 border-2 border-background">
+                <AvatarImage src={user.avatar_url} />
+                <AvatarFallback className="bg-primary/10 text-primary font-bold">
+                  {firstName.substring(0, 2).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <div className="text-sm hidden sm:block">
+                <p className="font-medium leading-none">{displayName}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">View Profile</p>
+              </div>
+            </div>
           </Link>
         </div>
 
-        {recentApplications.length > 0 ? (
-          <div className="space-y-3">
-            {recentApplications.map((app) => (
-              <Link key={app.id} to={`/applications/${app.id}`}>
-                <Card className="hover:shadow-md transition-shadow cursor-pointer group border-l-4"
-                  style={{ borderLeftColor: app.status === 'approved' ? '#22c55e' : app.status === 'rejected' ? '#ef4444' : app.status === 'in-review' ? '#eab308' : '#3b82f6' }}>
-                  <CardContent className="p-4 flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-foreground group-hover:text-primary transition-colors">{app.serviceName}</p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {app.id} • {new Date(app.dateApplied).toLocaleDateString()}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className={`px-2.5 py-1 rounded-full text-xs font-semibold ${statusColors[app.status] || statusColors.submitted}`}>
-                        {t(app.status === 'in-review' ? 'inReview' : app.status)}
-                      </div>
-                      <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:translate-x-1 transition-transform hidden sm:block" />
-                    </div>
-                  </CardContent>
-                </Card>
-              </Link>
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-10 bg-muted/30 rounded-xl border border-dashed">
-            <p className="text-muted-foreground">You haven't submitted any applications yet.</p>
-            <Link to="/services">
-              <Button variant="link">Explore Services</Button>
-            </Link>
-          </div>
-        )}
-      </div>
+        {/* SECTION 2: Stats Overview */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+          <StatsCard
+            title="Total Applications"
+            value={metrics?.total || 0}
+            icon={LayoutDashboard}
+            color="bg-blue-500/10 text-blue-600"
+          />
+          <StatsCard
+            title="Approved"
+            value={metrics?.approved || 0}
+            icon={CheckCircle}
+            color="bg-green-500/10 text-green-600"
+          />
+          <StatsCard
+            title="Pending"
+            value={(metrics?.pending || 0) + (metrics?.inReview || 0)}
+            icon={Clock}
+            color="bg-yellow-500/10 text-yellow-600"
+          />
+          <StatsCard
+            title="Rejected"
+            value={metrics?.rejected || 0}
+            icon={XCircle}
+            color="bg-red-500/10 text-red-600"
+          />
+        </div>
 
-      {/* Section 5: Categories */}
-      <div className="pt-4">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold text-foreground">Explore Categories</h2>
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-4">
-          {serviceCategories.map((category) => (<CategoryCard key={category.id} id={category.id} icon={category.icon} nameKey={category.nameKey} small />))}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 md:gap-12">
+
+          {/* SECTION 3: Recent Applications (Main Column) */}
+          <div className="lg:col-span-2 space-y-6">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xl font-bold tracking-tight">Recent Applications</h3>
+              <Link to="/applications">
+                <Button variant="ghost" size="sm" className="gap-1 text-primary">
+                  View All <ArrowRight className="h-4 w-4" />
+                </Button>
+              </Link>
+            </div>
+
+            <Card className="border-none shadow-sm bg-card/50">
+              <CardContent className="p-0">
+                {recentApps.length > 0 ? (
+                  <div className="divide-y">
+                    {recentApps.map((app) => {
+                      const status = statusConfig[app.status] || statusConfig.submitted;
+                      const StatusIcon = status.icon;
+
+                      return (
+                        <div key={app.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 md:p-6 gap-4 hover:bg-muted/30 transition-colors">
+                          <div className="flex items-start gap-4">
+                            <div className={`p-2 rounded-full ${status.color} mt-1`}>
+                              <StatusIcon className="h-5 w-5" />
+                            </div>
+                            <div>
+                              <h4 className="font-semibold text-base mb-1">{app.serviceName}</h4>
+                              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                                <span>Applied on {new Date(app.dateApplied).toLocaleDateString()}</span>
+                                <span className="hidden sm:inline">•</span>
+                                <span>ID: #{app.id.substring(0, 8)}...</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-between sm:justify-end gap-4 w-full sm:w-auto pl-14 sm:pl-0">
+                            <Badge variant="outline" className={`${status.color} border-transparent font-medium border`}>
+                              {t(status.label)}
+                            </Badge>
+                            <Link to={`/applications/${app.id}`}>
+                              <Button variant="outline" size="sm" className="h-8">Details</Button>
+                            </Link>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-12 text-center px-4">
+                    <div className="h-16 w-16 bg-muted rounded-full flex items-center justify-center mb-4">
+                      <FileText className="h-8 w-8 text-muted-foreground/50" />
+                    </div>
+                    <h3 className="text-lg font-semibold mb-1">No applications yet</h3>
+                    <p className="text-muted-foreground mb-6 max-w-sm">
+                      You haven't applied for any schemes yet. Browse available schemes to get started.
+                    </p>
+                    <Link to="/services">
+                      <Button>Browse Schemes</Button>
+                    </Link>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* SECTION 4: Recommended / Sidebar */}
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xl font-bold tracking-tight">Recommended</h3>
+              <Link to="/services">
+                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </Link>
+            </div>
+
+            <div className="space-y-4">
+              {recommendedSchemes.map((scheme) => (
+                <Link key={scheme.id} to={`/service/${scheme.id}`} className="block group">
+                  <Card className="overflow-hidden hover:shadow-md transition-all duration-300 border-border/50 group-hover:border-primary/20">
+                    <div className="h-2 w-full bg-gradient-to-r from-primary/20 to-primary/5 group-hover:from-primary/40 group-hover:to-primary/10 transition-all" />
+                    <CardContent className="p-4">
+                      <div className="flex justify-between items-start mb-2">
+                        <Badge variant="secondary" className="text-[10px] uppercase font-bold tracking-wider">
+                          {scheme.category === 'financial' ? 'Financial' : 'Social'}
+                        </Badge>
+                        <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                      </div>
+                      <h4 className="font-semibold line-clamp-1 mb-1 group-hover:text-primary transition-colors">{scheme.name}</h4>
+                      <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
+                        {scheme.description}
+                      </p>
+                      <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+                        <span className="text-green-600 dark:text-green-400">Open for application</span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              ))}
+            </div>
+          </div>
+
         </div>
       </div>
-    </div>
-  </Layout>);
+    </Layout>
+  );
 };
+
+// --- Subcomponents ---
+
+const StatsCard = ({ title, value, icon: Icon, color }) => (
+  <Card className="border-border/50 shadow-sm relative overflow-hidden group hover:shadow-md transition-shadow">
+    <CardContent className="p-6">
+      <div className="flex justify-between items-start">
+        <div>
+          <p className="text-sm font-medium text-muted-foreground mb-1">{title}</p>
+          <h3 className="text-3xl font-bold tracking-tight">{value}</h3>
+        </div>
+        <div className={`p-3 rounded-xl ${color} transition-colors bg-opacity-10`}>
+          <Icon className="h-5 w-5" />
+        </div>
+      </div>
+    </CardContent>
+  </Card>
+);
+
 export default Dashboard;
