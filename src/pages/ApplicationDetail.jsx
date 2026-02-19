@@ -128,7 +128,7 @@ const ApplicationDetail = () => {
                                         <div className="space-y-3 text-sm">
                                             <div className="flex justify-between py-2 border-b border-muted">
                                                 <span className="text-muted-foreground">Full Name</span>
-                                                <span className="font-medium">{selectedApp.formData?.fullName || user.fullName}</span>
+                                                <span className="font-medium">{selectedApp.formData?.fullName || user?.fullName || user?.full_name || user?.email || '—'}</span>
                                             </div>
                                             <div className="flex justify-between py-2 border-b border-muted">
                                                 <span className="text-muted-foreground">Mobile</span>

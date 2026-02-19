@@ -68,7 +68,7 @@ const Dashboard = () => {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-1">
-            {t('welcomeBack')}, {user.fullName.split(' ')[0]}! 👋
+            {t('welcomeBack')}, {(user?.fullName || user?.full_name || user?.email?.split('@')[0] || 'User').split(' ')[0]}! 👋
           </h1>
           <p className="text-muted-foreground">
             Here's what's happening with your applications.

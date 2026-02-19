@@ -22,8 +22,8 @@ const AdminUsers = () => {
 
     const filtered = useMemo(() => {
         return users.filter(u => {
-            if (search && !u.fullName.toLowerCase().includes(search.toLowerCase()) &&
-                !u.email.toLowerCase().includes(search.toLowerCase())) return false;
+            if (search && !(u.fullName || u.full_name || '').toLowerCase().includes(search.toLowerCase()) &&
+                !(u.email || '').toLowerCase().includes(search.toLowerCase())) return false;
             if (filterState && u.status !== filterState) return false;
             return true;
         });
@@ -35,8 +35,8 @@ const AdminUsers = () => {
         const result = toggleUserStatus(user.id);
         if (result.success) {
             const action = user.status === 'active' ? 'Blocked' : 'Unblocked';
-            toast.success(`User ${action}: ${user.fullName}`);
-            addLog(`User ${action}: ${user.fullName}`);
+            toast.success(`User ${action}: ${user.fullName || user.full_name || user.email}`);
+            addLog(`User ${action}: ${user.fullName || user.full_name || user.email}`);
         }
     };
 
@@ -77,7 +77,7 @@ const AdminUsers = () => {
                             <tbody>
                                 {paged.items.map(u => (
                                     <tr key={u.id}>
-                                        <td className="font-medium">{u.fullName}</td>
+                                        <td className="font-medium">{u.fullName || u.full_name || u.email || '—'}</td>
                                         <td className="text-sm text-muted-foreground">{u.email}</td>
                                         <td>{u.mobile}</td>
                                         <td className="capitalize">{u.state?.replace(/-/g, ' ') || '—'}</td>
@@ -123,7 +123,7 @@ const AdminUsers = () => {
                         <div className="admin-modal" onClick={e => e.stopPropagation()}>
                             <h2 className="admin-modal-title">User Profile</h2>
                             <div className="space-y-3">
-                                <div className="flex justify-between"><span className="text-muted-foreground">Name</span><span className="font-medium">{selectedUser.fullName}</span></div>
+                                <div className="flex justify-between"><span className="text-muted-foreground">Name</span><span className="font-medium">{selectedUser.fullName || selectedUser.full_name || selectedUser.email || '—'}</span></div>
                                 <div className="flex justify-between"><span className="text-muted-foreground">Email</span><span>{selectedUser.email}</span></div>
                                 <div className="flex justify-between"><span className="text-muted-foreground">Mobile</span><span>{selectedUser.mobile}</span></div>
                                 <div className="flex justify-between"><span className="text-muted-foreground">State</span><span className="capitalize">{selectedUser.state?.replace(/-/g, ' ')}</span></div>
