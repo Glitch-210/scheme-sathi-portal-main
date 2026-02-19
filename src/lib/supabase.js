@@ -3,12 +3,14 @@ import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-// Debug log to help user verify keys (remove in production if needed, but helpful now)
-// console.log('Supabase URL:', supabaseUrl);
+const siteUrl = import.meta.env.VITE_SITE_URL;
 
 if (!supabaseUrl || !supabaseAnonKey) {
-    console.error('Supabase variables are missing. Please check your .env file.');
+    throw new Error('Supabase variables are missing. Please check your .env file.');
+}
+if (!siteUrl) {
+    throw new Error('VITE_SITE_URL is missing. Please check your .env file.');
 }
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export { siteUrl };

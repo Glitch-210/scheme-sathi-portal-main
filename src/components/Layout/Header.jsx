@@ -37,9 +37,7 @@ const Header = () => {
           <Link to="/dashboard" id="dashboard-link" className="text-muted-foreground hover:text-foreground transition-colors text-sm font-medium">
             {t('dashboard')}
           </Link>
-          <Link to="/services" className="text-muted-foreground hover:text-foreground transition-colors text-sm font-medium">
-            {t('services')}
-          </Link>
+
           <Link to="/eligibility" id="eligibility-link" className="text-muted-foreground hover:text-foreground transition-colors text-sm font-medium">
             Check Eligibility
           </Link>
@@ -107,9 +105,7 @@ const Header = () => {
           <Link to="/dashboard" className="px-4 py-3 rounded-lg hover:bg-muted transition-colors" onClick={() => setIsMenuOpen(false)}>
             {t('dashboard')}
           </Link>
-          <Link to="/services" className="px-4 py-3 rounded-lg hover:bg-muted transition-colors" onClick={() => setIsMenuOpen(false)}>
-            {t('services')}
-          </Link>
+
           <Link to="/eligibility" className="px-4 py-3 rounded-lg hover:bg-muted transition-colors" onClick={() => setIsMenuOpen(false)}>
             Check Eligibility
           </Link>

@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { supabase } from './supabase'; // Import Supabase client
+import { supabase, siteUrl } from './supabase'; // Import Supabase client and siteUrl
 import NotificationService, { NOTIF_TYPES } from '@/services/NotificationService';
 import AuditService, { AUDIT_ACTIONS } from '@/services/AuditService';
 import { ADMIN_ROLES, isAdminRole } from '@/lib/rbac';
@@ -102,6 +102,9 @@ export const useAuthStore = create()(persist((set, get) => ({
         const { data, error } = await supabase.auth.signUp({
             email,
             password,
+            options: {
+                emailRedirectTo: `${siteUrl}/auth/callback`
+            }
         });
 
         if (error) {
