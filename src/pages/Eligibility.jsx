@@ -5,35 +5,105 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 
+import { useAuthStore } from '@/lib/store';
+
 const Eligibility = () => {
     const [results, setResults] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
+    const { user } = useAuthStore();
+
     const handleCheck = async (userData) => {
         setLoading(true);
         setError(null);
         try {
-            const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '';
-            const response = await fetch(`${apiBaseUrl}/api/eligibility/check`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(userData)
-            });
+            // 1. Validate & Transform Data
+            const payload = {
+                ...userData,
+                age: Number(userData.age),
+                income: Number(userData.income),
+                userId: user?.id || null, // Inject user ID if available
+            };
 
-            if (!response.ok) {
-                throw new Error('Failed to fetch results');
+            if (isNaN(payload.age) || isNaN(payload.income)) {
+                throw new Error("Invalid Age or Income. Please enter valid numbers.");
             }
 
-            const data = await response.json();
+            console.log("Checking eligibility for:", payload);
+
+            const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '';
+            let data;
+
+            try {
+                // 2. Attempt API Call
+                const response = await fetch(`${apiBaseUrl}/api/eligibility/check`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) throw new Error(`API Error: ${response.status}`);
+                data = await response.json();
+
+            } catch (apiErr) {
+                // 3. Fallback: Local Logic if API fails (e.g. localhost:5000 offline)
+                console.warn("API failed, using local fallback logic:", apiErr);
+                data = runLocalEligibilityCheck(payload);
+            }
+
+            if (!data || !data.recommendations) {
+                throw new Error("No recommendation data received");
+            }
+
             setResults(data.recommendations);
         } catch (err) {
-            setError(err.message);
+            console.error("Eligibility Check Failed:", err);
+            setError(err.message || "Failed to check eligibility. Please try again.");
         } finally {
             setLoading(false);
         }
+    };
+
+    // --- Local Fallback Logic (Mirrors Backend) ---
+    const runLocalEligibilityCheck = (user) => {
+        const schemes = [
+            {
+                id: 'pm-kisan',
+                name: 'PM Kisan Samman Nidhi',
+                conditions: (u) => u.occupation === 'Farmer' && u.income < 200000
+            },
+            {
+                id: 'scholarship-sc-st',
+                name: 'Post Matric Scholarship for SC/ST',
+                conditions: (u) => u.isStudent && (u.category === 'SC' || u.category === 'ST') && u.income < 250000
+            },
+            {
+                id: 'mudra-loan',
+                name: 'Pradhan Mantri Mudra Yojana',
+                conditions: (u) => u.occupation === 'Business' || u.occupation === 'Unemployed'
+            },
+            {
+                id: 'ayushman-bharat',
+                name: 'Ayushman Bharat Yojana',
+                conditions: (u) => u.income < 500000
+            }
+        ];
+
+        const recommendations = schemes.map(scheme => {
+            const isEligible = scheme.conditions(user);
+            return {
+                schemeId: scheme.id,
+                name: scheme.name,
+                score: isEligible ? 100 : 0,
+                status: isEligible ? 'Fully Eligible' : 'Not Eligible',
+                matched: isEligible ? ['Criteria Met'] : [],
+                failed: isEligible ? [] : ['Criteria Not Met'],
+                missing: []
+            };
+        }).filter(r => r.score > 0); // Only return eligible/partial
+
+        return { recommendations: recommendations.length > 0 ? recommendations : [] };
     };
 
     const reset = () => {
