@@ -78,7 +78,7 @@ export const getUserApplications = async (userId) => {
             .from('applications')
             .select('*')
             .eq('user_id', userId)
-            .order('created_at', { ascending: false });
+            .order('submitted_at', { ascending: false });
 
         if (error) {
             console.error("Supabase fetch error:", error);
@@ -92,8 +92,8 @@ export const getUserApplications = async (userId) => {
             userId: app.user_id,
             serviceId: app.scheme_id,
             serviceName: app.scheme_name,
-            status: app.status.toLowerCase().replace(' ', '-'), // Handle generic DB status strings
-            dateApplied: app.created_at,
+            status: (app.status || '').toLowerCase().replace(' ', '-'), // Handle generic DB status strings
+            dateApplied: app.submitted_at,
             formData: app.form_data
         }));
 
