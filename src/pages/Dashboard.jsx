@@ -1,8 +1,7 @@
 import { Link, Navigate } from 'react-router-dom';
-import { Search, ArrowRight, FileText, CheckCircle, Clock, XCircle, ChevronRight, LayoutDashboard } from 'lucide-react';
+import { ArrowRight, FileText, CheckCircle, Clock, XCircle, ChevronRight, LayoutDashboard } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -48,7 +47,7 @@ const Dashboard = () => {
   }, [schemes]);
 
   // --- Loading & Auth States ---
-  if (isAuthChecking) {
+  if (isAuthChecking || (isAuthenticated && user && !applications)) {
     return (
       <Layout>
         <div className="container py-8 space-y-8">
@@ -165,7 +164,7 @@ const Dashboard = () => {
                               <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
                                 <span>Applied on {new Date(app.dateApplied).toLocaleDateString()}</span>
                                 <span className="hidden sm:inline">•</span>
-                                <span>ID: #{app.id.substring(0, 8)}...</span>
+                                <span>ID: {app.id}</span>
                               </div>
                             </div>
                           </div>

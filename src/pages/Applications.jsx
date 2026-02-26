@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import Layout from '@/components/Layout/Layout';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useAuthStore, useApplicationStore } from '@/lib/store';
-
+import { Skeleton } from '@/components/ui/skeleton';
 
 const statusColors = {
   submitted: 'bg-blue-100 text-blue-700 border-blue-200',
@@ -27,17 +27,24 @@ const statusLabels = {
 const Applications = () => {
   const { t } = useTranslation();
   const { user, isAuthenticated, isAuthChecking } = useAuthStore();
-  const { getApplicationsByUser } = useApplicationStore();
+  const { getApplicationsByUser, applications: storeApps, loaded } = useApplicationStore();
 
   const applications = useMemo(() => {
     if (!user) return [];
     return getApplicationsByUser(user.id);
-  }, [user, getApplicationsByUser]);
+  }, [user, getApplicationsByUser, storeApps]);
 
-  if (isAuthChecking) {
-    return <div className="flex h-screen items-center justify-center">
-      <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-    </div>;
+  if (isAuthChecking || (isAuthenticated && user && !loaded)) {
+    return (
+      <Layout>
+        <div className="container py-6 md:py-10 space-y-6">
+          <Skeleton className="h-10 w-48 mb-8" />
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-1">
+            {[1, 2, 3].map(i => <Skeleton key={i} className="h-32 w-full roudned-xl" />)}
+          </div>
+        </div>
+      </Layout>
+    );
   }
 
   if (!isAuthenticated || !user) {

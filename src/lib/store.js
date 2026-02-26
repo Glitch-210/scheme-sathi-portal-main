@@ -4,6 +4,7 @@ import { supabase, siteUrl } from './supabase'; // Import Supabase client and si
 import NotificationService, { NOTIF_TYPES } from '@/services/NotificationService';
 import AuditService, { AUDIT_ACTIONS } from '@/services/AuditService';
 import { ADMIN_ROLES, isAdminRole } from '@/lib/rbac';
+import { createApplication, getUserApplications } from '@/lib/applicationService';
 
 // ════════════════════════════════════════
 // Theme Store (unchanged)
@@ -230,25 +231,10 @@ export const useApplicationStore = create((set, get) => ({
         const user = useAuthStore.getState().user;
         if (!user?.id) return;
 
-        const { data, error } = await supabase
-            .from('applications')
-            .select('*')
-            .eq('user_id', user.id);
+        const result = await getUserApplications(user.id);
 
-        if (!error && data) {
-            // Map snake_case to camelCase if needed, or adjust UI. 
-            // Assuming UI expects camelCase, mapping here:
-            const mapped = data.map(app => ({
-                id: app.id,
-                userId: app.user_id,
-                serviceId: app.scheme_id, // Mapping scheme_id to serviceId
-                // serviceName might need to be joined or fetched separately, 
-                // but for now relying on what's in the table if it exists, or just ID
-                status: app.status,
-                submittedAt: app.created_at,
-                ...app.form_data // Assuming form_data is a JSONB column
-            }));
-            set({ applications: mapped, loaded: true });
+        if (result.success) {
+            set({ applications: result.data, loaded: true });
         }
     },
 
@@ -256,23 +242,14 @@ export const useApplicationStore = create((set, get) => ({
 
     /** User: submit new application */
     addApplication: async (appData) => {
-        const { userId, serviceId, serviceName, category, formData } = appData;
+        const result = await createApplication(appData);
 
-        const { data, error } = await supabase
-            .from('applications')
-            .insert([{
-                user_id: userId,
-                scheme_id: serviceId,
-                status: 'submitted',
-                form_data: { serviceName, category, ...formData }
-            }])
-            .select();
-
-        if (!error && data) {
-            get().loadApplications(); // Refresh list
-            return { success: true, application: data[0] };
+        if (result.success) {
+            get().loadApplications(); // Refresh list to reflect real data
+            return { success: true, application: result.data };
         }
-        return { success: false, error: error?.message };
+
+        return { success: false, error: result.error };
     },
 
     getApplicationsByUser: (userId) => {

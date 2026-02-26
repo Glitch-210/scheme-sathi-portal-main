@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useParams, Navigate, useNavigate, Link } from 'react-router-dom';
+import { useParams, Navigate, Link } from 'react-router-dom';
 import { ArrowLeft, FileText, Upload, CheckCircle, Clock, Calendar, Globe, IndianRupee, Users, Shield, Wifi, Mic, FolderLock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,7 +14,6 @@ import { fetchDocumentFromDigiLocker } from '@/lib/digilocker';
 const ServiceDetail = () => {
   const { serviceId } = useParams();
   const { t } = useTranslation();
-  const navigate = useNavigate();
   const { user, isAuthenticated, isAuthChecking } = useAuthStore();
   const { addApplication } = useApplicationStore();
   const { addNotification } = useNotificationStore();
@@ -84,23 +83,31 @@ const ServiceDetail = () => {
     }
   };
 
-  const handleSubmit = () => {
-    const app = addApplication({
+  const handleSubmit = async () => {
+    const response = await addApplication({
       userId: user.id,
       serviceId: service.id,
       serviceName: service.name,
       category: service.category,
       formData: { ...formData, documents: uploadedDocs },
     });
-    setApplicationId(app.id);
-    addNotification({
-      userId: user.id,
-      title: 'Application Submitted',
-      message: `Your application for ${service.name} has been submitted successfully. Application ID: ${app.id}`,
-      type: 'status',
-      read: false,
-    });
-    setStep('success');
+
+    if (response.success) {
+      setApplicationId(response.application.id); // The SSA- ID
+
+      addNotification({
+        userId: user.id,
+        title: 'Application Submitted',
+        message: `Your application for ${service.name} has been submitted successfully. Application ID: ${response.application.id}`,
+        type: 'status',
+        read: false,
+      });
+
+      setStep('success');
+      toast.success("Application submitted successfully!");
+    } else {
+      toast.error(response.error || "Failed to submit application");
+    }
   };
 
   return (<Layout>
