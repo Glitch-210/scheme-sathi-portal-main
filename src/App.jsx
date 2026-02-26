@@ -18,6 +18,7 @@ import ApplicationDetail from "./pages/ApplicationDetail";
 import Profile from "./pages/Profile";
 import Notifications from "./pages/Notifications";
 import NotFound from "./pages/NotFound";
+import Placeholder from "./pages/Placeholder";
 import { OnboardingProvider } from "@/components/Onboarding/OnboardingProvider";
 import LanguageModal from "@/components/Onboarding/LanguageModal";
 import WalkthroughOverlay from "@/components/Onboarding/WalkthroughOverlay";
@@ -141,6 +142,12 @@ const App = () => {
                 <Route path="/applications/:id" element={<ApplicationDetail />} />
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/notifications" element={<Notifications />} />
+
+                {/* Footer Placeholder routes */}
+                <Route path="/about" element={<Placeholder />} />
+                <Route path="/help" element={<Placeholder />} />
+                <Route path="/privacy" element={<Placeholder />} />
+                <Route path="/terms" element={<Placeholder />} />
 
                 {/* Admin routes */}
                 <Route path="/admin/login" element={<AdminLogin />} />

@@ -43,7 +43,17 @@ const ServiceDetail = () => {
   }
   const service = serviceId ? getById(serviceId) : undefined;
   if (!service) {
-    return <Navigate to="/services" replace />;
+    return (
+      <Layout>
+        <div className="container py-6 md:py-10 text-center">
+          <h2 className="text-3xl font-bold mb-4">Service Not Found</h2>
+          <p className="text-muted-foreground mb-6">The service you are looking for does not exist.</p>
+          <Link to="/services">
+            <Button>Return to Services</Button>
+          </Link>
+        </div>
+      </Layout>
+    );
   }
   const handleInputChange = (e) => {
     setFormData((prev) => ({

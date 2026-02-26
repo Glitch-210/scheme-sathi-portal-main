@@ -7,47 +7,57 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { useAuthStore } from '@/lib/store';
 import { serviceCategories, getServicesByCategory } from '@/lib/services';
 const Category = () => {
-    const { categoryId } = useParams();
-    const { t } = useTranslation();
-    const { isAuthenticated } = useAuthStore();
-    if (!isAuthenticated) {
-        return <Navigate to="/login" replace/>;
-    }
-    const category = serviceCategories.find((c) => c.id === categoryId);
-    const services = categoryId ? getServicesByCategory(categoryId) : [];
-    if (!category) {
-        return <Navigate to="/services" replace/>;
-    }
-    return (<Layout>
-      <div className="container py-6 md:py-10">
-        <div className="mb-8">
+  const { categoryId } = useParams();
+  const { t } = useTranslation();
+  const { isAuthenticated } = useAuthStore();
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+  const category = serviceCategories.find((c) => c.id === categoryId);
+  const services = categoryId ? getServicesByCategory(categoryId) : [];
+  if (!category) {
+    return (
+      <Layout>
+        <div className="container py-6 md:py-10 text-center">
+          <h2 className="text-3xl font-bold mb-4">Category Not Found</h2>
+          <p className="text-muted-foreground mb-6">The category you are looking for does not exist or has been removed.</p>
           <Link to="/dashboard">
-            <Button variant="ghost" size="sm" className="gap-2 mb-4">
-              <ArrowLeft className="h-4 w-4"/>
-              Back to Dashboard
-            </Button>
+            <Button>Return to Dashboard</Button>
           </Link>
-          <div className="flex items-center gap-4">
-            <span className="text-4xl">{category.icon}</span>
-            <div>
-              <h1 className="text-2xl md:text-3xl font-bold text-foreground">
-                {t(category.nameKey)}
-              </h1>
-              <p className="text-muted-foreground">
-                {services.length} services available
-              </p>
-            </div>
+        </div>
+      </Layout>
+    );
+  }
+  return (<Layout>
+    <div className="container py-6 md:py-10">
+      <div className="mb-8">
+        <Link to="/dashboard">
+          <Button variant="ghost" size="sm" className="gap-2 mb-4">
+            <ArrowLeft className="h-4 w-4" />
+            Back to Dashboard
+          </Button>
+        </Link>
+        <div className="flex items-center gap-4">
+          <span className="text-4xl">{category.icon}</span>
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold text-foreground">
+              {t(category.nameKey)}
+            </h1>
+            <p className="text-muted-foreground">
+              {services.length} services available
+            </p>
           </div>
         </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {services.map((service) => (<ServiceCard key={service.id} service={service}/>))}
-        </div>
-
-        {services.length === 0 && (<div className="text-center py-12">
-            <p className="text-muted-foreground">No services found in this category</p>
-          </div>)}
       </div>
-    </Layout>);
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {services.map((service) => (<ServiceCard key={service.id} service={service} />))}
+      </div>
+
+      {services.length === 0 && (<div className="text-center py-12">
+        <p className="text-muted-foreground">No services found in this category</p>
+      </div>)}
+    </div>
+  </Layout>);
 };
 export default Category;
