@@ -55,18 +55,22 @@ export const useAuthStore = create()(persist((set, get) => ({
             const { data: { session } } = await supabase.auth.getSession();
             if (session?.user) {
                 // Fetch profile
-                const { data: profile } = await supabase
+                const { data: profile, error: profileError } = await supabase
                     .from('profiles')
                     .select('*')
                     .eq('id', session.user.id)
-                    .single();
+                    .maybeSingle();
+
+                if (profileError && import.meta.env.DEV) {
+                    console.warn('Profile fetch warning:', profileError.message);
+                }
 
                 set({
                     session,
                     isAuthenticated: true,
                     // Ensure ID is always set from session, even if profile is missing
                     user: {
-                        ...profile,
+                        ...(profile || {}),
                         id: session.user.id,
                         email: session.user.email
                     }
@@ -93,15 +97,19 @@ export const useAuthStore = create()(persist((set, get) => ({
             }
 
             if (data.user) {
-                const { data: profile } = await supabase
+                const { data: profile, error: profileError } = await supabase
                     .from('profiles')
                     .select('*')
                     .eq('id', data.user.id)
-                    .single();
+                    .maybeSingle();
+
+                if (profileError && import.meta.env.DEV) {
+                    console.warn('Profile fetch warning:', profileError.message);
+                }
 
                 set({
                     user: {
-                        ...profile,
+                        ...(profile || {}),
                         id: data.user.id,
                         email: data.user.email
                     },
