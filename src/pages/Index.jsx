@@ -47,7 +47,7 @@ const Index = () => {
         <div className="max-w-3xl mx-auto text-center animate-fade-in">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6">
             <span>🇮🇳</span>
-            <span>Digital India Initiative</span>
+            <span>{t('digitalIndiaInitiative')}</span>
           </div>
 
           <h1 className="text-3xl md:text-5xl font-bold text-primary mb-6 leading-tight">
@@ -95,10 +95,10 @@ const Index = () => {
       <div className="container">
         <div className="text-center mb-12">
           <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-4">
-            Why Choose Scheme Sarthi?
+            {t('whyChoose')}
           </h2>
           <p className="text-muted-foreground max-w-xl mx-auto">
-            Your trusted companion for accessing government services seamlessly
+            {t('trustedCompanion')}
           </p>
         </div>
 
@@ -125,10 +125,10 @@ const Index = () => {
       <div className="container">
         <div className="max-w-2xl mx-auto text-center">
           <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-4">
-            Ready to simplify your government service experience?
+            {t('readyToSimplify')}
           </h2>
           <p className="text-muted-foreground mb-8">
-            Join lakhs of citizens who are already using Scheme Sarthi for their government service needs.
+            {t('joinLakhs')}
           </p>
           {!isAuthenticated && (<Link to="/register">
             <Button variant="hero" size="lg">

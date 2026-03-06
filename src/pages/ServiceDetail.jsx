@@ -45,10 +45,10 @@ const ServiceDetail = () => {
     return (
       <Layout>
         <div className="container py-6 md:py-10 text-center">
-          <h2 className="text-3xl font-bold mb-4">Service Not Found</h2>
-          <p className="text-muted-foreground mb-6">The service you are looking for does not exist.</p>
+          <h2 className="text-3xl font-bold mb-4">{t('serviceNotFound')}</h2>
+          <p className="text-muted-foreground mb-6">{t('serviceNotFoundDesc')}</p>
           <Link to="/services">
-            <Button>Return to Services</Button>
+            <Button>{t('returnToServices')}</Button>
           </Link>
         </div>
       </Layout>
@@ -116,7 +116,7 @@ const ServiceDetail = () => {
         <Link to="/services">
           <Button variant="ghost" size="sm" className="gap-2 mb-6">
             <ArrowLeft className="h-4 w-4" />
-            Back to Services
+            {t('backToServices')}
           </Button>
         </Link>
 
@@ -128,7 +128,7 @@ const ServiceDetail = () => {
                   ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
                   : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
                   }`}>
-                  {service.governmentLevel} Government
+                  {service.governmentLevel} {t('government')}
                 </span>
               )}
               {service.applicationMode && (
@@ -145,14 +145,14 @@ const ServiceDetail = () => {
               <div className="space-y-4">
                 <div>
                   <h3 className="font-semibold text-foreground mb-2 flex items-center gap-2">
-                    <IndianRupee className="h-4 w-4 text-primary" /> Financial Assistance
+                    <IndianRupee className="h-4 w-4 text-primary" /> {t('financialAssistance')}
                   </h3>
                   <p className="text-muted-foreground">{service.benefits.financial_assistance}</p>
                 </div>
                 {service.benefits.non_financial_support && (
                   <div>
                     <h3 className="font-semibold text-foreground mb-2 flex items-center gap-2">
-                      <Shield className="h-4 w-4 text-primary" /> Non-Financial Support
+                      <Shield className="h-4 w-4 text-primary" /> {t('nonFinancialSupport')}
                     </h3>
                     <p className="text-muted-foreground">{service.benefits.non_financial_support}</p>
                   </div>
@@ -160,7 +160,7 @@ const ServiceDetail = () => {
               </div>
             ) : (
               <div>
-                <h3 className="font-semibold text-foreground mb-2">Description</h3>
+                <h3 className="font-semibold text-foreground mb-2">{t('description')}</h3>
                 <p className="text-muted-foreground">{service.description}</p>
               </div>
             )}
@@ -170,43 +170,43 @@ const ServiceDetail = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {service.targetBeneficiaries && (
                   <div className="bg-muted/50 rounded-lg p-3">
-                    <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1"><Users className="h-3 w-3" /> Target Beneficiaries</p>
+                    <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1"><Users className="h-3 w-3" /> {t('targetBeneficiaries')}</p>
                     <p className="text-sm font-medium text-foreground">{service.targetBeneficiaries}</p>
                   </div>
                 )}
                 {service.incomeLimit && (
                   <div className="bg-muted/50 rounded-lg p-3">
-                    <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1"><IndianRupee className="h-3 w-3" /> Income Limit</p>
+                    <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1"><IndianRupee className="h-3 w-3" /> {t('incomeLimit')}</p>
                     <p className="text-sm font-medium text-foreground">{service.incomeLimit}</p>
                   </div>
                 )}
                 {service.ageCriteria && (
                   <div className="bg-muted/50 rounded-lg p-3">
-                    <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1"><Calendar className="h-3 w-3" /> Age Criteria</p>
+                    <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1"><Calendar className="h-3 w-3" /> {t('ageCriteria')}</p>
                     <p className="text-sm font-medium text-foreground">{service.ageCriteria}</p>
                   </div>
                 )}
                 {service.processingTimeDays && (
                   <div className="bg-muted/50 rounded-lg p-3">
-                    <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1"><Clock className="h-3 w-3" /> Processing Time</p>
-                    <p className="text-sm font-medium text-foreground">{service.processingTimeDays} days</p>
+                    <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1"><Clock className="h-3 w-3" /> {t('processingTime')}</p>
+                    <p className="text-sm font-medium text-foreground">{service.processingTimeDays} {t('days')}</p>
                   </div>
                 )}
                 {service.validityPeriod && (
                   <div className="bg-muted/50 rounded-lg p-3">
-                    <p className="text-xs text-muted-foreground mb-1">Validity Period</p>
+                    <p className="text-xs text-muted-foreground mb-1">{t('validityPeriod')}</p>
                     <p className="text-sm font-medium text-foreground">{service.validityPeriod}</p>
                   </div>
                 )}
                 {service.renewalRequired && (
                   <div className="bg-muted/50 rounded-lg p-3">
-                    <p className="text-xs text-muted-foreground mb-1">Renewal Required</p>
+                    <p className="text-xs text-muted-foreground mb-1">{t('renewalRequired')}</p>
                     <p className="text-sm font-medium text-foreground">{service.renewalRequired}</p>
                   </div>
                 )}
                 {service.applicationFee && (
                   <div className="bg-muted/50 rounded-lg p-3">
-                    <p className="text-xs text-muted-foreground mb-1">Application Fee</p>
+                    <p className="text-xs text-muted-foreground mb-1">{t('applicationFee')}</p>
                     <p className="text-sm font-medium text-foreground">{service.applicationFee}</p>
                   </div>
                 )}
@@ -217,7 +217,7 @@ const ServiceDetail = () => {
             {service.applicationProcessSummary && (
               <div>
                 <h3 className="font-semibold text-foreground mb-2 flex items-center gap-2">
-                  <Globe className="h-4 w-4 text-primary" /> Application Process
+                  <Globe className="h-4 w-4 text-primary" /> {t('applicationProcess')}
                 </h3>
                 <p className="text-muted-foreground text-sm">{service.applicationProcessSummary}</p>
               </div>
@@ -226,26 +226,26 @@ const ServiceDetail = () => {
             {/* Digital Features */}
             {service.digitalFeatures && (
               <div>
-                <h3 className="font-semibold text-foreground mb-3">Digital Features</h3>
+                <h3 className="font-semibold text-foreground mb-3">{t('digitalFeatures')}</h3>
                 <div className="flex flex-wrap gap-2">
                   {service.digitalFeatures.trackable && (
                     <span className="flex items-center gap-1.5 text-xs bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400 px-3 py-1.5 rounded-full">
-                      <Wifi className="h-3 w-3" /> Trackable
+                      <Wifi className="h-3 w-3" /> {t('trackable')}
                     </span>
                   )}
                   {service.digitalFeatures.multilingual_support && (
                     <span className="flex items-center gap-1.5 text-xs bg-purple-50 text-purple-700 dark:bg-purple-900/20 dark:text-purple-400 px-3 py-1.5 rounded-full">
-                      <Globe className="h-3 w-3" /> Multilingual
+                      <Globe className="h-3 w-3" /> {t('multilingual')}
                     </span>
                   )}
                   {service.digitalFeatures.voice_search_supported && (
                     <span className="flex items-center gap-1.5 text-xs bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400 px-3 py-1.5 rounded-full">
-                      <Mic className="h-3 w-3" /> Voice Search
+                      <Mic className="h-3 w-3" /> {t('voiceSearch')}
                     </span>
                   )}
                   {service.digitalFeatures.document_locker_enabled && (
                     <span className="flex items-center gap-1.5 text-xs bg-orange-50 text-orange-700 dark:bg-orange-900/20 dark:text-orange-400 px-3 py-1.5 rounded-full">
-                      <FolderLock className="h-3 w-3" /> DigiLocker
+                      <FolderLock className="h-3 w-3" /> {t('digilocker')}
                     </span>
                   )}
                 </div>
@@ -255,13 +255,13 @@ const ServiceDetail = () => {
             {/* Existing eligibility for non-scheme services */}
             {!service.isScheme && service.eligibility && (
               <div>
-                <h3 className="font-semibold text-foreground mb-2">Eligibility</h3>
+                <h3 className="font-semibold text-foreground mb-2">{t('eligibility')}</h3>
                 <p className="text-muted-foreground">{service.eligibility}</p>
               </div>
             )}
 
             <div>
-              <h3 className="font-semibold text-foreground mb-2">Required Documents</h3>
+              <h3 className="font-semibold text-foreground mb-2">{t('requiredDocuments')}</h3>
               <ul className="list-disc list-inside text-muted-foreground space-y-1">
                 {service.documents.map((doc) => (<li key={doc}>{doc}</li>))}
               </ul>
@@ -281,7 +281,7 @@ const ServiceDetail = () => {
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <div>
-              <CardTitle>Step 1: Personal Details</CardTitle>
+              <CardTitle>{t('step1PersonalDetails')}</CardTitle>
               <p className="text-sm text-muted-foreground mt-1">{service.name}</p>
             </div>
           </div>
@@ -310,27 +310,27 @@ const ServiceDetail = () => {
 
           <div>
             <label className="text-sm font-medium text-foreground mb-1.5 block">
-              Aadhaar Number *
+              {t('aadhaarNumber')} *
             </label>
             <Input name="aadhaar" value={formData.aadhaar} onChange={handleInputChange} placeholder="12-digit Aadhaar number" maxLength={12} />
           </div>
 
           <div>
             <label className="text-sm font-medium text-foreground mb-1.5 block">
-              Address *
+              {t('address')} *
             </label>
             <Input name="address" value={formData.address} onChange={handleInputChange} placeholder="Full address" />
           </div>
 
           <div>
             <label className="text-sm font-medium text-foreground mb-1.5 block">
-              Additional Information
+              {t('additionalInfo')}
             </label>
             <Input name="additionalInfo" value={formData.additionalInfo} onChange={handleInputChange} placeholder="Any other relevant information" />
           </div>
 
           <Button onClick={() => setStep('documents')} className="w-full">
-            {t('next')}: Upload Documents
+            {t('next')}: {t('uploadDocuments')}
           </Button>
         </CardContent>
       </Card>)}
@@ -342,7 +342,7 @@ const ServiceDetail = () => {
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <div>
-              <CardTitle>Step 2: Upload Documents</CardTitle>
+              <CardTitle>{t('step2UploadDocuments')}</CardTitle>
               <p className="text-sm text-muted-foreground mt-1">{service.name}</p>
             </div>
           </div>
@@ -350,7 +350,7 @@ const ServiceDetail = () => {
         <CardContent className="space-y-4">
           <div className="bg-muted p-4 rounded-lg mb-4">
             <p className="text-sm text-muted-foreground">
-              📂 <strong>DigiLocker Integration:</strong> Select documents from your DigiLocker or upload manually.
+              📂 <strong>{t('digilockerIntegration')}</strong> {t('digilockerDesc')}
             </p>
           </div>
 
@@ -361,8 +361,8 @@ const ServiceDetail = () => {
             </div>
             {uploadedDocs.includes(doc) ? (<div className="flex items-center gap-2 text-accent">
               <CheckCircle className="h-5 w-5" />
-              <span className="text-sm font-medium">Uploaded</span>
-              {verifiedDocs.includes(doc) && <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full border border-green-200">Verified via DigiLocker</span>}
+              <span className="text-sm font-medium">{t('uploaded')}</span>
+              {verifiedDocs.includes(doc) && <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full border border-green-200">{t('verifiedViaDigilocker')}</span>}
             </div>) : (
               <div className="flex gap-2">
                 <Button variant="outline" size="sm" onClick={() => handleDigiLockerFetch(doc)} className="gap-2 border-blue-200 text-blue-700 hover:bg-blue-50">
@@ -370,14 +370,14 @@ const ServiceDetail = () => {
                 </Button>
                 <Button variant="outline" size="sm" onClick={() => handleDocUpload(doc)} className="gap-2">
                   <Upload className="h-4 w-4" />
-                  Upload
+                  {t('upload')}
                 </Button>
               </div>
             )}
           </div>))}
 
           <Button onClick={() => setStep('confirm')} className="w-full">
-            {t('next')}: Review & Submit
+            {t('next')}: {t('reviewSubmit')}
           </Button>
         </CardContent>
       </Card>)}
@@ -389,48 +389,48 @@ const ServiceDetail = () => {
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <div>
-              <CardTitle>Step 3: Review & Submit</CardTitle>
+              <CardTitle>{t('step3ReviewSubmit')}</CardTitle>
               <p className="text-sm text-muted-foreground mt-1">{service.name}</p>
             </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
           <div>
-            <h3 className="font-semibold text-foreground mb-3">Personal Details</h3>
+            <h3 className="font-semibold text-foreground mb-3">{t('personalDetails')}</h3>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Name:</span>
+                <span className="text-muted-foreground">{t('nameLabel')}</span>
                 <span className="text-foreground">{formData.fullName}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Mobile:</span>
+                <span className="text-muted-foreground">{t('mobileLabel')}</span>
                 <span className="text-foreground">{formData.mobile}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Aadhaar:</span>
+                <span className="text-muted-foreground">{t('aadhaarLabel')}</span>
                 <span className="text-foreground">XXXX-XXXX-{formData.aadhaar.slice(-4)}</span>
               </div>
             </div>
           </div>
 
           <div>
-            <h3 className="font-semibold text-foreground mb-3">Documents Uploaded</h3>
+            <h3 className="font-semibold text-foreground mb-3">{t('documentsUploaded')}</h3>
             <div className="flex flex-wrap gap-2">
               {uploadedDocs.map((doc) => (<span key={doc} className="px-3 py-1 bg-accent/20 text-accent rounded-full text-sm flex items-center gap-1">
                 ✓ {doc}
-                {verifiedDocs.includes(doc) && <span className="text-[10px] bg-green-100 text-green-800 px-1 rounded ml-1">Verified</span>}
+                {verifiedDocs.includes(doc) && <span className="text-[10px] bg-green-100 text-green-800 px-1 rounded ml-1">{t('verified')}</span>}
               </span>))}
             </div>
           </div>
 
           <div className="bg-muted p-4 rounded-lg">
             <p className="text-sm text-muted-foreground">
-              By submitting this application, you confirm that all information provided is accurate and complete.
+              {t('submissionConfirmation')}
             </p>
           </div>
 
           <Button onClick={handleSubmit} className="w-full" variant="hero">
-            {t('submit')} Application
+            {t('submitApplication')}
           </Button>
         </CardContent>
       </Card>)}
@@ -441,10 +441,10 @@ const ServiceDetail = () => {
             <CheckCircle className="h-10 w-10 text-accent" />
           </div>
           <h2 className="text-2xl font-bold text-foreground mb-2">
-            Application Submitted!
+            {t('applicationSubmitted')}
           </h2>
           <p className="text-muted-foreground mb-6">
-            Your application has been submitted successfully.
+            {t('applicationSubmittedDesc')}
           </p>
           <div className="bg-muted rounded-lg p-4 mb-6">
             <p className="text-sm text-muted-foreground">{t('applicationId')}</p>
@@ -452,10 +452,10 @@ const ServiceDetail = () => {
           </div>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link to="/applications">
-              <Button variant="outline">Track Application</Button>
+              <Button variant="outline">{t('trackApplication')}</Button>
             </Link>
             <Link to="/dashboard">
-              <Button>Go to Dashboard</Button>
+              <Button>{t('goToDashboard')}</Button>
             </Link>
           </div>
         </CardContent>

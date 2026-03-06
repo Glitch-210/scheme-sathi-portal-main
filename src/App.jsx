@@ -7,7 +7,6 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
-import AuthCallback from "./pages/AuthCallback";
 import Dashboard from "./pages/Dashboard";
 import Services from "./pages/Services";
 import Eligibility from "./pages/Eligibility";
@@ -24,11 +23,10 @@ import LanguageModal from "@/components/Onboarding/LanguageModal";
 import WalkthroughOverlay from "@/components/Onboarding/WalkthroughOverlay";
 import Chatbot from "@/components/Chatbot/Chatbot";
 import IntroLoader from "@/components/IntroLoader";
-import { useThemeStore, useAuthStore, useApplicationStore, useNotificationStore, seedAllData } from "@/lib/store";
+import { useThemeStore, useAuthStore, useApplicationStore, useNotificationStore } from "@/lib/store";
 import { useSchemeStore } from "@/stores/schemeStore";
 import { useAuditStore } from "@/stores/auditStore";
 import { isAdminRole } from "@/lib/rbac";
-import { supabase } from "@/lib/supabase";
 
 // Admin pages
 import AdminLogin from "./pages/admin/AdminLogin";
@@ -68,7 +66,7 @@ const AdminGuard = ({ children }) => {
 const App = () => {
   const [isLoading, setIsLoading] = useState(true);
   const initTheme = useThemeStore((s) => s.initTheme);
-  const checkSession = useAuthStore((s) => s.checkSession); // Add checkSession
+  const initAuthListener = useAuthStore((s) => s.initAuthListener);
   const loadSchemes = useSchemeStore((s) => s.loadSchemes);
   const loadApplications = useApplicationStore((s) => s.loadApplications);
   const loadNotifications = useNotificationStore((s) => s.loadNotifications);
@@ -79,29 +77,15 @@ const App = () => {
 
   useEffect(() => {
     initTheme();
-    seedAllData();
-    checkSession();
     loadSchemes();
 
-    // Listen for auth state changes (sign in, sign out, token refresh)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-        useAuthStore.getState().setSession(session);
-        if (session?.user) {
-          // Re-check session to sync profile data
-          checkSession();
-        }
-      } else if (event === 'SIGNED_OUT') {
-        useAuthStore.getState().setUser(null);
-        useAuthStore.getState().setSession(null);
-        useAuthStore.setState({ isAuthenticated: false });
-      }
-    });
+    // Supabase onAuthStateChange listener — handles sign-in, sign-out, token refresh
+    const unsubscribe = initAuthListener();
 
     return () => {
-      subscription.unsubscribe();
+      if (unsubscribe) unsubscribe();
     };
-  }, [initTheme, checkSession, loadSchemes]);
+  }, [initTheme, initAuthListener, loadSchemes]);
 
   // Load user-specific data when user is authenticated/available
   // Load user-specific data when user is authenticated/available
@@ -132,7 +116,6 @@ const App = () => {
                 <Route path="/" element={<Index />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
-                <Route path="/auth/callback" element={<AuthCallback />} />
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/services" element={<Services />} />
                 <Route path="/eligibility" element={<Eligibility />} />

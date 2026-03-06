@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { Shield, Mail, Lock, Loader2 } from 'lucide-react';
 import { useAuthStore } from '@/lib/store';
+import { isAdminRole } from '@/lib/rbac';
 
 const AdminLogin = () => {
     const [email, setEmail] = useState('');
@@ -11,8 +12,8 @@ const AdminLogin = () => {
     const { adminLogin, isAuthenticated, user } = useAuthStore();
     const navigate = useNavigate();
 
-    // Already authenticated as admin
-    if (isAuthenticated && user?.role === 'ADMIN') {
+    // Already authenticated as admin — check RBAC roles
+    if (isAuthenticated && user?.role && isAdminRole(user.role)) {
         return <Navigate to="/admin" replace />;
     }
 
@@ -29,7 +30,7 @@ const AdminLogin = () => {
             if (result.success) {
                 navigate('/admin');
             } else {
-                setError(result.error || 'Invalid credentials');
+                setError(result.error || 'Invalid credentials or insufficient permissions');
             }
         } catch (err) {
             setError('An unexpected error occurred');
@@ -65,7 +66,7 @@ const AdminLogin = () => {
                         <div className="admin-login-input-wrap">
                             <Mail className="h-4 w-4 text-muted-foreground" />
                             <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
-                                placeholder="admin@schemesarthi.gov.in" className="admin-login-input" autoComplete="email" />
+                                placeholder="Enter admin email" className="admin-login-input" autoComplete="email" />
                         </div>
                     </div>
 

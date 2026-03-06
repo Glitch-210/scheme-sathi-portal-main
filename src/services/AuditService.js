@@ -1,9 +1,12 @@
 /**
  * AuditService — Immutable audit log for all admin actions
- * Persisted in localStorage under key: scheme_sarthi_audit_logs
+ * Backed by Supabase `audit_logs` table.
+ * APPEND-ONLY: Only .insert() is used. No update or delete operations.
  */
 
-const STORAGE_KEY = 'scheme_sarthi_audit_logs';
+import { supabase } from '@/lib/supabase';
+
+const TABLE = 'audit_logs';
 
 /** Action type constants */
 export const AUDIT_ACTIONS = {
@@ -22,85 +25,101 @@ export const AUDIT_ACTIONS = {
     MAINTENANCE_TOGGLED: 'MAINTENANCE_TOGGLED',
 };
 
-// ── Persistence helpers ──
-function readFromStorage() {
-    try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        return raw ? JSON.parse(raw) : null;
-    } catch { return null; }
-}
+// ── Dedup: check if same action+target was logged in the last 2 seconds ──
+let _lastLog = { actionType: '', targetId: '', time: 0 };
 
-function writeToStorage(data) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-}
-
-// ── Dedup: prevent identical log within 1-second window ──
-function isDuplicate(logs, actionType, targetId) {
+function isDuplicate(actionType, targetId) {
     const now = Date.now();
-    return logs.some(l =>
-        l.actionType === actionType &&
-        l.targetId === targetId &&
-        (now - new Date(l.timestamp).getTime()) < 1000
-    );
+    if (
+        _lastLog.actionType === actionType &&
+        _lastLog.targetId === targetId &&
+        (now - _lastLog.time) < 2000
+    ) {
+        return true;
+    }
+    return false;
 }
 
 // ── Public API ──
 const AuditService = {
-    /** Seed empty array if nothing exists */
+    /** Seed is a no-op */
     seed() {
-        if (!readFromStorage()) {
-            writeToStorage([]);
-        }
+        // No seeding needed
     },
 
     /** Get all logs (newest first) */
-    getAll() {
-        return (readFromStorage() || []).sort(
-            (a, b) => new Date(b.timestamp) - new Date(a.timestamp)
-        );
+    async getAll(maxResults = 200) {
+        const { data, error } = await supabase
+            .from(TABLE)
+            .select('*')
+            .order('timestamp', { ascending: false })
+            .limit(maxResults);
+
+        if (error) {
+            console.error('AuditService.getAll error:', error);
+            return [];
+        }
+
+        return data || [];
     },
 
     /**
-     * Create an audit log entry.
-     * @param {string} actionType - One of AUDIT_ACTIONS
-     * @param {string} performedBy - User ID of the performer
-     * @param {string} performerRole - Role of the performer
-     * @param {string} targetId - ID of affected entity
-     * @param {string} targetType - Type: 'scheme', 'application', 'user', 'system'
-     * @param {object} metadata - Additional context
+     * Create an audit log entry (APPEND-ONLY)
      */
-    log(actionType, performedBy, performerRole, targetId, targetType, metadata = {}) {
-        const all = this.getAll();
-
+    async log(actionType, performedBy, performerRole, targetId, targetType, metadata = {}) {
         // Duplicate prevention
-        if (isDuplicate(all, actionType, targetId)) {
+        if (isDuplicate(actionType, targetId)) {
             return { success: false, error: 'Duplicate log entry' };
         }
 
-        const entry = {
-            id: `audit-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
-            actionType,
-            performedBy,
-            performerRole,
-            targetId: targetId || 'N/A',
-            targetType: targetType || 'system',
-            metadata,
-            timestamp: new Date().toISOString(),
-        };
+        try {
+            const entry = {
+                action_type: actionType,
+                performed_by: performedBy || null,
+                performer_role: performerRole || 'unknown',
+                target_id: targetId || 'N/A',
+                target_type: targetType || 'system',
+                metadata: metadata,
+            };
 
-        all.unshift(entry);
-        writeToStorage(all);
-        return { success: true, entry };
+            const { data, error } = await supabase
+                .from(TABLE)
+                .insert(entry)
+                .select()
+                .single();
+
+            if (error) throw error;
+
+            // Update dedup
+            _lastLog = { actionType, targetId: targetId || '', time: Date.now() };
+
+            return { success: true, entry: data };
+        } catch (err) {
+            console.error('AuditService.log error:', err);
+            return { success: false, error: err.message };
+        }
     },
 
     /** Filter logs by action type */
-    getByActionType(actionType) {
-        return this.getAll().filter(l => l.actionType === actionType);
+    async getByActionType(actionType) {
+        const { data, error } = await supabase
+            .from(TABLE)
+            .select('*')
+            .eq('action_type', actionType)
+            .order('timestamp', { ascending: false })
+            .limit(100);
+
+        if (error) {
+            console.error('AuditService.getByActionType error:', error);
+            return [];
+        }
+        return data || [];
     },
 
-    /** Get unique action types present in logs */
-    getActionTypes() {
-        const types = new Set(this.getAll().map(l => l.actionType));
+    /** Get unique action types from the db (could be large, limit used) */
+    async getActionTypes() {
+        const all = await this.getAll(500);
+        const types = new Set(all.map(l => l.action_type));
         return [...types];
     },
 };

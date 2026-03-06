@@ -1,5 +1,5 @@
 /**
- * Audit Store — Zustand store wrapping AuditService
+ * Audit Store — Zustand store wrapping AuditService (Firestore-backed)
  * Only SUPER_ADMIN can access logs.
  */
 import { create } from 'zustand';
@@ -12,27 +12,24 @@ export const useAuditStore = create((set, get) => ({
     logs: [],
     loaded: false,
 
-    /** Load logs from service */
-    loadLogs: () => {
-        AuditService.seed();
-        set({ logs: AuditService.getAll(), loaded: true });
+    /** Load logs from Firestore */
+    loadLogs: async () => {
+        const logs = await AuditService.getAll();
+        set({ logs, loaded: true });
     },
 
-    refresh: () => set({ logs: AuditService.getAll() }),
+    refresh: async () => {
+        const logs = await AuditService.getAll();
+        set({ logs });
+    },
 
     /**
      * Log an admin action (called from other stores).
-     * @param {string} actionType - AUDIT_ACTIONS constant
-     * @param {string} performedBy - user id
-     * @param {string} performerRole - user role
-     * @param {string} targetId
-     * @param {string} targetType - 'scheme' | 'application' | 'user' | 'system'
-     * @param {object} metadata
      */
-    logAction: (actionType, performedBy, performerRole, targetId, targetType, metadata) => {
-        const result = AuditService.log(actionType, performedBy, performerRole, targetId, targetType, metadata);
+    logAction: async (actionType, performedBy, performerRole, targetId, targetType, metadata) => {
+        const result = await AuditService.log(actionType, performedBy, performerRole, targetId, targetType, metadata);
         if (result.success) {
-            set({ logs: AuditService.getAll() });
+            await get().refresh();
         }
         return result;
     },
@@ -48,5 +45,7 @@ export const useAuditStore = create((set, get) => ({
     },
 
     /** Get unique action types */
-    getActionTypes: () => AuditService.getActionTypes(),
+    getActionTypes: async () => {
+        return AuditService.getActionTypes();
+    },
 }));

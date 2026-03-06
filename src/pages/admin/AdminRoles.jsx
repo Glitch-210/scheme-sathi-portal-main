@@ -1,8 +1,8 @@
 import { useState, useMemo } from 'react';
-import { Shield, ChevronDown } from 'lucide-react';
+import { Shield } from 'lucide-react';
 import AdminLayout from '@/components/Admin/AdminLayout';
 import { useAuthStore } from '@/lib/store';
-import { useAuditStore, AUDIT_ACTIONS } from '@/stores/auditStore';
+import { useAuditStore } from '@/stores/auditStore';
 import { ROLES, ADMIN_ROLES, getRoleLabel, getRoleBadgeClass, hasPermission, ACTIONS } from '@/lib/rbac';
 import { paginate } from '@/lib/pagination';
 import Pagination from '@/components/Pagination';
@@ -11,6 +11,13 @@ import { toast } from 'sonner';
 const AdminRoles = () => {
     const { user, getAdminUsers, updateUserRole } = useAuthStore();
     const { logAction } = useAuditStore();
+    const admins = getAdminUsers();
+    const [page, setPage] = useState(1);
+    const [limit, setLimit] = useState(10);
+    const [editingId, setEditingId] = useState(null);
+    const [newRole, setNewRole] = useState('');
+
+    const paged = useMemo(() => paginate(admins, page, limit), [admins, page, limit]);
 
     // Check permission
     if (!hasPermission(user?.role, ACTIONS.MANAGE_ROLES)) {
@@ -26,14 +33,6 @@ const AdminRoles = () => {
             </AdminLayout>
         );
     }
-
-    const admins = getAdminUsers();
-    const [page, setPage] = useState(1);
-    const [limit, setLimit] = useState(10);
-    const [editingId, setEditingId] = useState(null);
-    const [newRole, setNewRole] = useState('');
-
-    const paged = useMemo(() => paginate(admins, page, limit), [admins, page, limit]);
 
     const handleRoleChange = (adminUser) => {
         if (!newRole || newRole === adminUser.role) {

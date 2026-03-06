@@ -88,7 +88,7 @@ const Services = () => {
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2">{t('services')}</h1>
-        <p className="text-muted-foreground">Browse {schemes.length}+ government schemes and services</p>
+        <p className="text-muted-foreground">{t('browse')} {schemes.length}+ {t('governmentSchemes')}</p>
       </div>
 
       {/* Search & Filter Bar */}
@@ -96,7 +96,7 @@ const Services = () => {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search schemes, benefits, categories..."
+            placeholder={t('searchPlaceholder')}
             value={searchQuery}
             onChange={handleSearchChange}
             className="pl-10"
@@ -104,7 +104,7 @@ const Services = () => {
         </div>
         <Button variant="outline" onClick={() => setShowFilters(!showFilters)} className="gap-2">
           <Filter className="h-4 w-4" />
-          Filters
+          {t('filters')}
         </Button>
       </div>
 
@@ -112,26 +112,26 @@ const Services = () => {
       {showFilters && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6 p-4 border rounded-lg bg-muted/30">
           <div>
-            <label className="text-sm font-medium text-foreground mb-1.5 block">State</label>
+            <label className="text-sm font-medium text-foreground mb-1.5 block">{t('state')}</label>
             <select
               value={selectedState}
               onChange={handleStateChange}
               className="w-full border rounded-md px-3 py-2 bg-background text-foreground text-sm"
             >
-              <option value="">All States</option>
+              <option value="">{t('allStates')}</option>
               {states.map(s => (
                 <option key={s.id} value={s.id}>{s.name}</option>
               ))}
             </select>
           </div>
           <div>
-            <label className="text-sm font-medium text-foreground mb-1.5 block">Category</label>
+            <label className="text-sm font-medium text-foreground mb-1.5 block">{t('category')}</label>
             <select
               value={selectedCategory}
               onChange={(e) => { setSelectedCategory(e.target.value); setCurrentPage(1); setSearchQuery(''); }}
               className="w-full border rounded-md px-3 py-2 bg-background text-foreground text-sm"
             >
-              <option value="">All Categories</option>
+              <option value="">{t('allCategories')}</option>
               {serviceCategories.map(c => (
                 <option key={c.id} value={c.id}>{c.icon} {t(c.nameKey)} ({categoryCounts[c.id] || 0})</option>
               ))}
@@ -157,13 +157,13 @@ const Services = () => {
       {/* Results Header */}
       <div className="flex items-center justify-between mb-4">
         <p className="text-sm text-muted-foreground">
-          Showing {paginatedServices.length} of {displayedServices.length} services
+          {t('showing')} {paginatedServices.length} {t('of')} {displayedServices.length} {t('servicesText')}
           {selectedCategory && ` in ${selectedCategory.replace(/-/g, ' ')}`}
           {selectedState && ` for ${states.find(s => s.id === selectedState)?.name || selectedState}`}
         </p>
         {selectedCategory && (
           <Button variant="ghost" size="sm" onClick={() => { setSelectedCategory(''); setCurrentPage(1); }}>
-            Clear filter
+            {t('clearFilter')}
           </Button>
         )}
       </div>
@@ -178,8 +178,8 @@ const Services = () => {
       {/* Empty State */}
       {displayedServices.length === 0 && (
         <div className="text-center py-16">
-          <p className="text-muted-foreground text-lg mb-2">No services found</p>
-          <p className="text-sm text-muted-foreground">Try adjusting your search or filters</p>
+          <p className="text-muted-foreground text-lg mb-2">{t('noServicesFound')}</p>
+          <p className="text-sm text-muted-foreground">{t('tryAdjustingSearch')}</p>
         </div>
       )}
 

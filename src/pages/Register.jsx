@@ -64,10 +64,12 @@ const Register = () => {
           setError('email', { message: 'Email already registered' });
         }
       }
-    } catch (err) {
+    } catch (_err) {
       toast.error('An unexpected error occurred');
     }
   };
+
+
 
   return (<Layout showFooter={false}>
     <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center p-4 gradient-hero">
@@ -108,7 +110,7 @@ const Register = () => {
 
             <div>
               <label className="text-sm font-medium text-foreground mb-1.5 block">
-                Password *
+                {t('password')} *
               </label>
               <Input {...register('mpin')} type="password" placeholder="Create a password (min 6 chars)" />
               {errors.mpin && (<p className="text-sm text-destructive mt-1">{errors.mpin.message}</p>)}
@@ -116,7 +118,7 @@ const Register = () => {
 
             <div>
               <label className="text-sm font-medium text-foreground mb-1.5 block">
-                Confirm Password *
+                {t('confirmMpin')} *
               </label>
               <Input {...register('confirmMpin')} type="password" placeholder="Confirm password" />
               {errors.confirmMpin && (<p className="text-sm text-destructive mt-1">{errors.confirmMpin.message}</p>)}
@@ -134,11 +136,12 @@ const Register = () => {
             </div>
 
             <Button type="submit" className="w-full" disabled={isSubmitting}>
-              {isSubmitting ? 'Registering...' : t('register')}
+              {isSubmitting ? t('registering') : t('register')}
             </Button>
 
+
             <p className="text-center text-sm text-muted-foreground">
-              Already have an account?{' '}
+              {t('alreadyAccount')}{' '}
               <Link to="/login" className="text-primary font-medium hover:underline">
                 {t('login')}
               </Link>

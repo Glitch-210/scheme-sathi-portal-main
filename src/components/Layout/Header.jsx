@@ -39,7 +39,7 @@ const Header = () => {
           </Link>
 
           <Link to="/eligibility" id="eligibility-link" className="text-muted-foreground hover:text-foreground transition-colors text-sm font-medium">
-            Check Eligibility
+            {t('checkEligibility')}
           </Link>
           <Link to="/applications" className="text-muted-foreground hover:text-foreground transition-colors text-sm font-medium">
             {t('myApplications')}
@@ -107,7 +107,7 @@ const Header = () => {
           </Link>
 
           <Link to="/eligibility" className="px-4 py-3 rounded-lg hover:bg-muted transition-colors" onClick={() => setIsMenuOpen(false)}>
-            Check Eligibility
+            {t('checkEligibility')}
           </Link>
           <Link to="/applications" className="px-4 py-3 rounded-lg hover:bg-muted transition-colors" onClick={() => setIsMenuOpen(false)}>
             {t('myApplications')}

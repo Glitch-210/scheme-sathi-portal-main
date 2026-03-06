@@ -1,5 +1,5 @@
 /**
- * Scheme Store — Zustand store wrapping SchemeService
+ * Scheme Store — Zustand store wrapping SchemeService (Firestore-backed)
  * Shared by both admin and user pages for real-time sync
  * Includes audit logging and notification broadcasts on admin mutations
  */
@@ -65,13 +65,14 @@ export const useSchemeStore = create((set, get) => ({
     schemes: [],
     loaded: false,
 
-    loadSchemes: () => {
-        SchemeService.seed();
-        set({ schemes: SchemeService.getAll(), loaded: true });
+    loadSchemes: async () => {
+        const data = await SchemeService.seed();
+        set({ schemes: data || [], loaded: true });
     },
 
-    refresh: () => {
-        set({ schemes: SchemeService.getAll() });
+    refresh: async () => {
+        const data = await SchemeService.getAll();
+        set({ schemes: data });
     },
 
     // ── Getters ──
@@ -99,18 +100,17 @@ export const useSchemeStore = create((set, get) => ({
     },
 
     // ── Admin Mutations (with audit logging) ──
-    addScheme: (data) => {
-        const result = SchemeService.add(data);
+    addScheme: async (data) => {
+        const result = await SchemeService.add(data);
         if (result.success) {
-            set({ schemes: SchemeService.getAll() });
+            await get().refresh();
             const admin = getAdmin();
-            AuditService.log(
+            await AuditService.log(
                 AUDIT_ACTIONS.SCHEME_CREATED,
                 admin?.id, admin?.role, result.scheme.id, 'scheme',
                 { schemeName: result.scheme.name }
             );
-            // Broadcast new scheme notification
-            NotificationService.broadcastToAll(
+            await NotificationService.broadcastToAll(
                 `New Scheme: ${result.scheme.name}`,
                 `A new scheme "${result.scheme.name}" has been added. Check it out!`,
                 NOTIF_TYPES.SCHEME
@@ -119,12 +119,12 @@ export const useSchemeStore = create((set, get) => ({
         return result;
     },
 
-    updateScheme: (id, data) => {
-        const result = SchemeService.update(id, data);
+    updateScheme: async (id, data) => {
+        const result = await SchemeService.update(id, data);
         if (result.success) {
-            set({ schemes: SchemeService.getAll() });
+            await get().refresh();
             const admin = getAdmin();
-            AuditService.log(
+            await AuditService.log(
                 AUDIT_ACTIONS.SCHEME_UPDATED,
                 admin?.id, admin?.role, id, 'scheme',
                 { schemeName: data.name || id }
@@ -133,13 +133,13 @@ export const useSchemeStore = create((set, get) => ({
         return result;
     },
 
-    removeScheme: (id) => {
+    removeScheme: async (id) => {
         const scheme = get().getById(id);
-        const result = SchemeService.remove(id);
+        const result = await SchemeService.remove(id);
         if (result.success) {
-            set({ schemes: SchemeService.getAll() });
+            await get().refresh();
             const admin = getAdmin();
-            AuditService.log(
+            await AuditService.log(
                 AUDIT_ACTIONS.SCHEME_DELETED,
                 admin?.id, admin?.role, id, 'scheme',
                 { schemeName: scheme?.name || id }
@@ -148,16 +148,15 @@ export const useSchemeStore = create((set, get) => ({
         return result;
     },
 
-    toggleSchemeStatus: (id) => {
-        const result = SchemeService.toggleStatus(id);
+    toggleSchemeStatus: async (id) => {
+        const result = await SchemeService.toggleStatus(id);
         if (result.success) {
-            set({ schemes: SchemeService.getAll() });
+            await get().refresh();
             const admin = getAdmin();
-            const scheme = get().getById(id);
-            AuditService.log(
+            await AuditService.log(
                 AUDIT_ACTIONS.SCHEME_TOGGLED,
                 admin?.id, admin?.role, id, 'scheme',
-                { schemeName: scheme?.name || id, newStatus: scheme?.status }
+                { schemeName: result.scheme?.name || id, newStatus: result.scheme?.status }
             );
         }
         return result;

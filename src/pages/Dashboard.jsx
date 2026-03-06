@@ -1,8 +1,8 @@
 import { Link, Navigate } from 'react-router-dom';
 import { ArrowRight, FileText, CheckCircle, Clock, XCircle, ChevronRight, LayoutDashboard } from 'lucide-react';
-import { useState, useMemo } from 'react';
+import { useMemo } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -13,12 +13,12 @@ import { useSchemeStore } from '@/stores/schemeStore';
 import { calculateMetrics } from '@/lib/analytics';
 
 const statusConfig = {
-  submitted: { color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400', label: 'Submitted', icon: FileText },
-  'in-review': { color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400', label: 'In Review', icon: Clock },
-  verification: { color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400', label: 'Verification', icon: Clock },
-  approved: { color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400', label: 'Approved', icon: CheckCircle },
-  completed: { color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400', label: 'Completed', icon: CheckCircle },
-  rejected: { color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400', label: 'Rejected', icon: XCircle },
+  submitted: { color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400', label: 'submitted', icon: FileText },
+  'in-review': { color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400', label: 'inReview', icon: Clock },
+  verification: { color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400', label: 'verification', icon: Clock },
+  approved: { color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400', label: 'approved', icon: CheckCircle },
+  completed: { color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400', label: 'completed', icon: CheckCircle },
+  rejected: { color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400', label: 'rejected', icon: XCircle },
 };
 
 const Dashboard = () => {
@@ -26,7 +26,6 @@ const Dashboard = () => {
   const { user, isAuthenticated, isAuthChecking } = useAuthStore();
   const { getApplicationsByUser } = useApplicationStore();
   const { schemes } = useSchemeStore();
-  const [searchQuery, setSearchQuery] = useState('');
 
   // --- Data Logic ---
   const { applications, metrics, recentApps } = useMemo(() => {
@@ -81,10 +80,10 @@ const Dashboard = () => {
               {currentDate}
             </h2>
             <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground">
-              Welcome back, {firstName} 👋
+              {t('welcomeBack')}, {firstName} 👋
             </h1>
             <p className="text-muted-foreground max-w-xl">
-              Here's an overview of your recent activity and applications.
+              {t('dashboardOverview')}
             </p>
           </div>
 
@@ -107,25 +106,25 @@ const Dashboard = () => {
         {/* SECTION 2: Stats Overview */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
           <StatsCard
-            title="Total Applications"
+            title={t('totalApplications')}
             value={metrics?.total || 0}
             icon={LayoutDashboard}
             color="bg-blue-500/10 text-blue-600"
           />
           <StatsCard
-            title="Approved"
+            title={t('approved')}
             value={metrics?.approved || 0}
             icon={CheckCircle}
             color="bg-green-500/10 text-green-600"
           />
           <StatsCard
-            title="Pending"
+            title={t('pending')}
             value={(metrics?.pending || 0) + (metrics?.inReview || 0)}
             icon={Clock}
             color="bg-yellow-500/10 text-yellow-600"
           />
           <StatsCard
-            title="Rejected"
+            title={t('rejected')}
             value={metrics?.rejected || 0}
             icon={XCircle}
             color="bg-red-500/10 text-red-600"
@@ -137,10 +136,10 @@ const Dashboard = () => {
           {/* SECTION 3: Recent Applications (Main Column) */}
           <div className="lg:col-span-2 space-y-6">
             <div className="flex items-center justify-between">
-              <h3 className="text-xl font-bold tracking-tight">Recent Applications</h3>
+              <h3 className="text-xl font-bold tracking-tight">{t('recentApplications')}</h3>
               <Link to="/applications">
                 <Button variant="ghost" size="sm" className="gap-1 text-primary">
-                  View All <ArrowRight className="h-4 w-4" />
+                  {t('viewAll')} <ArrowRight className="h-4 w-4" />
                 </Button>
               </Link>
             </div>
@@ -162,7 +161,7 @@ const Dashboard = () => {
                             <div>
                               <h4 className="font-semibold text-base mb-1">{app.serviceName}</h4>
                               <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
-                                <span>Applied on {new Date(app.dateApplied).toLocaleDateString()}</span>
+                                <span>{t('appliedOn')} {new Date(app.dateApplied).toLocaleDateString()}</span>
                                 <span className="hidden sm:inline">•</span>
                                 <span>ID: {app.id}</span>
                               </div>
@@ -174,7 +173,7 @@ const Dashboard = () => {
                               {t(status.label)}
                             </Badge>
                             <Link to={`/applications/${app.id}`}>
-                              <Button variant="outline" size="sm" className="h-8">Details</Button>
+                              <Button variant="outline" size="sm" className="h-8">{t('details')}</Button>
                             </Link>
                           </div>
                         </div>
@@ -186,12 +185,12 @@ const Dashboard = () => {
                     <div className="h-16 w-16 bg-muted rounded-full flex items-center justify-center mb-4">
                       <FileText className="h-8 w-8 text-muted-foreground/50" />
                     </div>
-                    <h3 className="text-lg font-semibold mb-1">No applications yet</h3>
+                    <h3 className="text-lg font-semibold mb-1">{t('noApplicationsYet')}</h3>
                     <p className="text-muted-foreground mb-6 max-w-sm">
-                      You haven't applied for any schemes yet. Browse available schemes to get started.
+                      {t('noApplicationsDesc')}
                     </p>
                     <Link to="/services">
-                      <Button>Browse Schemes</Button>
+                      <Button>{t('browseSchemes')}</Button>
                     </Link>
                   </div>
                 )}
@@ -202,7 +201,7 @@ const Dashboard = () => {
           {/* SECTION 4: Recommended / Sidebar */}
           <div className="space-y-6">
             <div className="flex items-center justify-between">
-              <h3 className="text-xl font-bold tracking-tight">Recommended</h3>
+              <h3 className="text-xl font-bold tracking-tight">{t('recommended')}</h3>
               <Link to="/services">
                 <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
                   <ArrowRight className="h-4 w-4" />
@@ -227,7 +226,7 @@ const Dashboard = () => {
                         {scheme.description}
                       </p>
                       <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
-                        <span className="text-green-600 dark:text-green-400">Open for application</span>
+                        <span className="text-green-600 dark:text-green-400">{t('openForApplication')}</span>
                       </div>
                     </CardContent>
                   </Card>

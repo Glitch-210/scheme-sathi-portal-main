@@ -1,13 +1,14 @@
 /**
  * SchemeService — CRUD for government schemes
- * All data persisted in localStorage under key: scheme_sarthi_schemes
+ * Backed by Supabase `schemes` table.
  */
 
+import { supabase } from '@/lib/supabase';
 import schemesJson from '@/data/schemes.json';
 
-const STORAGE_KEY = 'scheme_sarthi_schemes';
+const TABLE = 'schemes';
 
-// ── Category / State Mappings (from services.js) ──
+// ── Category / State Mappings ──
 const categoryMap = {
     'Health': 'health', 'Education': 'education', 'Agriculture': 'agriculture',
     'Women Empowerment': 'women-empowerment', 'MSME': 'msme', 'Startup': 'startup',
@@ -62,147 +63,231 @@ const originalServices = [
 
 // ── Transform JSON schemes into app format ──
 function transformScheme(scheme) {
-    const incomeNum = parseInt(scheme.income_limit.replace(/[₹,\s]/g, '').replace('perannum', ''), 10) || 0;
+
+    // We stringify complex objects to store in simple text/jsonb columns easily, or just send them.
+    // Supabase can handle JSON fields, but let's conform to the existing structure where possible.
     return {
+        // use scheme_id as a unique identifier property (we let Supabase generate its own PK `id` if needed, 
+        // but we'll use this `id` as a natural key or map it)
         id: scheme.scheme_id.toLowerCase(),
         name: scheme.scheme_name,
-        description: scheme.benefits.financial_assistance,
+        description: scheme.benefits.financial_assistance || '',
         category: categoryMap[scheme.category] || scheme.category.toLowerCase().replace(/\s+/g, '-'),
         state: stateIdMap[scheme.state] || scheme.state.toLowerCase().replace(/\s+/g, ''),
         eligibility: `${scheme.target_beneficiaries} | ${scheme.age_criteria} | Income limit: ${scheme.income_limit}`,
-        documents: scheme.required_documents,
-        estimatedBenefitAmount: incomeNum,
-        governmentLevel: scheme.government_level,
-        targetBeneficiaries: scheme.target_beneficiaries,
-        incomeLimit: scheme.income_limit,
-        ageCriteria: scheme.age_criteria,
-        benefits: scheme.benefits,
-        applicationMode: scheme.application_mode,
-        applicationProcessSummary: scheme.application_process_summary,
-        validityPeriod: scheme.validity_period,
-        renewalRequired: scheme.renewal_required,
-        applicationFee: scheme.application_fee,
-        processingTimeDays: scheme.processing_time_days,
-        priorityScore: scheme.priority_score,
-        digitalFeatures: scheme.digital_features,
-        isScheme: true,
+        // Stringify arrays/objects if the table expects text, but we defined it as text with default in SQL.
+        // Actually, JSONB for complex objects if we altered it, but it was text. We'll stringify array-like things 
+        // or just pass them if it's acceptable. For simplicity, we just pass the string form.
+        documents_required: JSON.stringify(scheme.required_documents),
+        // we map some custom json fields to text for searching
+        government_level: scheme.government_level,
+        target_beneficiaries: scheme.target_beneficiaries,
+        benefits: JSON.stringify(scheme.benefits),
+        application_process: scheme.application_mode,
         status: 'active',
     };
 }
 
-// ── Build seed data ──
 function buildSeedData() {
     const transformed = schemesJson.map(transformScheme);
-    const withStatus = originalServices.map(s => ({ ...s, status: 'active' }));
+    const withStatus = originalServices.map(s => ({
+        id: s.id,
+        name: s.name,
+        description: s.description,
+        category: s.category,
+        state: s.state,
+        eligibility: s.eligibility,
+        documents_required: JSON.stringify(s.documents),
+        status: 'active'
+    }));
     return [...withStatus, ...transformed];
 }
 
-// ── Persistence helpers ──
-function readFromStorage() {
-    try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        return raw ? JSON.parse(raw) : null;
-    } catch { return null; }
+// ── In-memory cache ──
+let _cache = null;
+let _cacheTimestamp = 0;
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+function isCacheValid() {
+    return _cache && (Date.now() - _cacheTimestamp) < CACHE_TTL;
 }
 
-function writeToStorage(data) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+function invalidateCache() {
+    _cache = null;
+    _cacheTimestamp = 0;
 }
 
 // ── Public API ──
 const SchemeService = {
-    /** Seed localStorage if empty. Returns the full list. */
-    seed() {
-        if (!readFromStorage()) {
-            writeToStorage(buildSeedData());
+    /**
+     * Seed Supabase with initial scheme data.
+     */
+    async seed() {
+        const { data: existing, error: countError } = await supabase
+            .from(TABLE)
+            .select('id')
+            .limit(1);
+
+        if (countError) {
+            console.error('Error fetching schemes for seed check:', countError);
+            return [];
         }
-        return readFromStorage();
-    },
 
-    getAll() {
-        return readFromStorage() || [];
-    },
+        if (!existing || existing.length === 0) {
+            const seedData = buildSeedData();
+            // batch insert
+            const { error: insertError } = await supabase
+                .from(TABLE)
+                .insert(seedData);
 
-    /** Only active schemes (for user-facing pages) */
-    getAllActive() {
-        return this.getAll().filter(s => s.status === 'active');
-    },
-
-    getById(id) {
-        return this.getAll().find(s => s.id === id) || null;
-    },
-
-    /** Add a scheme (admin). Returns { success, scheme?, error? } */
-    add(schemeData) {
-        const all = this.getAll();
-        // Duplicate name check
-        if (all.some(s => s.name.toLowerCase() === schemeData.name.toLowerCase())) {
-            return { success: false, error: 'A scheme with this name already exists' };
+            if (insertError) {
+                console.error('Error seeding schemes:', insertError);
+            } else {
+                invalidateCache();
+            }
         }
-        const newScheme = {
-            ...schemeData,
-            id: schemeData.id || `scheme-${Date.now()}`,
-            status: schemeData.status || 'active',
-            isScheme: true,
-            createdAt: new Date().toISOString(),
-        };
-        all.push(newScheme);
-        writeToStorage(all);
-        return { success: true, scheme: newScheme };
+        return this.getAll();
     },
 
-    /** Update a scheme by id (admin). Returns { success, scheme?, error? } */
-    update(id, updates) {
-        const all = this.getAll();
-        const idx = all.findIndex(s => s.id === id);
-        if (idx === -1) return { success: false, error: 'Scheme not found' };
-        // Duplicate name check (excluding self)
-        if (updates.name && all.some(s => s.id !== id && s.name.toLowerCase() === updates.name.toLowerCase())) {
-            return { success: false, error: 'A scheme with this name already exists' };
+    /** Get all schemes */
+    async getAll() {
+        if (isCacheValid()) return _cache;
+
+        const { data, error } = await supabase
+            .from(TABLE)
+            .select('*')
+            .order('created_at', { ascending: false });
+
+        if (error) {
+            console.error('SchemeService.getAll error:', error);
+            return [];
         }
-        all[idx] = { ...all[idx], ...updates, updatedAt: new Date().toISOString() };
-        writeToStorage(all);
-        return { success: true, scheme: all[idx] };
+
+        _cache = data || [];
+        _cacheTimestamp = Date.now();
+        return _cache;
     },
 
-    /** Delete a scheme by id (admin) */
-    remove(id) {
-        const all = this.getAll().filter(s => s.id !== id);
-        writeToStorage(all);
-        return { success: true };
+    /** Only active schemes */
+    async getAllActive() {
+        const all = await this.getAll();
+        return all.filter(s => s.status === 'active');
+    },
+
+    /** Get a single scheme by its natural `id` field */
+    async getById(id) {
+        const all = await this.getAll();
+        return all.find(s => s.id === id) || null;
+    },
+
+    /** Add a scheme */
+    async add(schemeData) {
+        try {
+            const all = await this.getAll();
+            if (all.some(s => s.name.toLowerCase() === schemeData.name.toLowerCase())) {
+                return { success: false, error: 'A scheme with this name already exists' };
+            }
+
+            const newScheme = {
+                ...schemeData,
+                id: schemeData.id || `scheme-${Date.now()}`,
+                status: schemeData.status || 'active',
+            };
+
+            const { data, error } = await supabase
+                .from(TABLE)
+                .insert(newScheme)
+                .select()
+                .single();
+
+            if (error) throw error;
+
+            invalidateCache();
+            return { success: true, scheme: data };
+        } catch (err) {
+            return { success: false, error: err.message };
+        }
+    },
+
+    /** Update a scheme by its `id` field */
+    async update(id, updates) {
+        try {
+            const all = await this.getAll();
+            const existing = all.find(s => s.id === id);
+            if (!existing) return { success: false, error: 'Scheme not found' };
+
+            if (updates.name && all.some(s => s.id !== id && s.name.toLowerCase() === updates.name.toLowerCase())) {
+                return { success: false, error: 'A scheme with this name already exists' };
+            }
+
+            const { data, error } = await supabase
+                .from(TABLE)
+                .update({ ...updates, updated_at: new Date().toISOString() })
+                .eq('id', id)
+                .select()
+                .single();
+
+            if (error) throw error;
+
+            invalidateCache();
+            return { success: true, scheme: data };
+        } catch (err) {
+            return { success: false, error: err.message };
+        }
+    },
+
+    /** Delete a scheme by its `id` */
+    async remove(id) {
+        try {
+            const { error } = await supabase
+                .from(TABLE)
+                .delete()
+                .eq('id', id);
+
+            if (error) throw error;
+
+            invalidateCache();
+            return { success: true };
+        } catch (err) {
+            return { success: false, error: err.message };
+        }
     },
 
     /** Toggle active/inactive */
-    toggleStatus(id) {
-        const all = this.getAll();
-        const idx = all.findIndex(s => s.id === id);
-        if (idx === -1) return { success: false, error: 'Scheme not found' };
-        all[idx].status = all[idx].status === 'active' ? 'inactive' : 'active';
-        writeToStorage(all);
-        return { success: true, scheme: all[idx] };
+    async toggleStatus(id) {
+        const all = await this.getAll();
+        const existing = all.find(s => s.id === id);
+        if (!existing) return { success: false, error: 'Scheme not found' };
+
+        const newStatus = existing.status === 'active' ? 'inactive' : 'active';
+        return this.update(id, { status: newStatus });
     },
 
     /** Search schemes */
-    search(query) {
-        const lower = query.toLowerCase();
-        return this.getAll().filter(s =>
-            s.name.toLowerCase().includes(lower) ||
-            s.description.toLowerCase().includes(lower) ||
-            s.category.toLowerCase().includes(lower) ||
-            (s.targetBeneficiaries && s.targetBeneficiaries.toLowerCase().includes(lower)) ||
-            (s.governmentLevel && s.governmentLevel.toLowerCase().includes(lower))
+    async search(queryStr) {
+        const lower = queryStr.toLowerCase();
+        const all = await this.getAll();
+        return all.filter(s =>
+            (s.name && s.name.toLowerCase().includes(lower)) ||
+            (s.description && s.description.toLowerCase().includes(lower)) ||
+            (s.category && s.category.toLowerCase().includes(lower)) ||
+            (s.target_beneficiaries && s.target_beneficiaries.toLowerCase().includes(lower)) ||
+            (s.government_level && s.government_level.toLowerCase().includes(lower))
         );
     },
 
     /** Filter by category and/or state */
-    filter(filters) {
-        return this.getAll().filter(s => {
+    async filter(filters) {
+        const all = await this.getAll();
+        return all.filter(s => {
             if (filters.category && s.category !== filters.category) return false;
             if (filters.state && s.state !== filters.state && s.state !== 'central') return false;
             if (filters.status && s.status !== filters.status) return false;
             return true;
         });
     },
+
+    invalidateCache,
 };
 
 export default SchemeService;
