@@ -141,58 +141,7 @@ export const useAuthStore = create()(persist((set, get) => ({
         }
     },
 
-    // ── Email OTP Login (Citizens) ──
-    /** Step 1: Send OTP to email */
-    sendOtp: async (email) => {
-        try {
-            const { error } = await supabase.auth.signInWithOtp({
-                email,
-            });
-            if (error) throw error;
-            return { success: true };
-        } catch (err) {
-            console.error('Email OTP error:', err);
-            return { success: false, error: err.message };
-        }
-    },
 
-    /** Step 2: Verify OTP code */
-    verifyOtp: async (email, token) => {
-        try {
-            const { data, error } = await supabase.auth.verifyOtp({
-                email,
-                token,
-                type: 'email',
-            });
-            if (error) throw error;
-
-            // Check if user profile exists, create if first time
-            let profile = await fetchUserProfile(data.user.id);
-            if (!profile) {
-                profile = {
-                    id: data.user.id,
-                    role: 'USER',
-                    language: 'en',
-                    email: data.user.email,
-                };
-                await supabase.from('profiles').insert(profile);
-            }
-
-            set({
-                user: {
-                    ...profile,
-                    id: data.user.id,
-                },
-                isAuthenticated: true,
-                session: data.session,
-            });
-
-            return { success: true };
-        } catch (err) {
-            console.error('OTP verification error:', err);
-            return { success: false, error: err.message };
-        }
-    },
 
     /** Register new user (email/password) */
     register: async (userData) => {
