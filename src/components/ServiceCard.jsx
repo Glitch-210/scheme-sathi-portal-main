@@ -13,8 +13,8 @@ const ServiceCard = ({ service }) => {
         <div className="flex items-center gap-2 mb-3 flex-wrap">
           {service.governmentLevel && (
             <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${service.governmentLevel === 'Central'
-                ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
-                : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+              ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+              : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
               }`}>
               {service.governmentLevel}
             </span>
@@ -51,7 +51,7 @@ const ServiceCard = ({ service }) => {
           </div>
         )}
 
-        <Link to={`/service/${service.id}`}>
+        <Link to={`/schemes/${service.slug || service.id}`}>
           <Button variant="outline" size="sm" className="w-full gap-2">
             {t('viewDetails')}
             <ChevronRight className="h-4 w-4" />

@@ -4,104 +4,8 @@
  */
 
 import { supabase } from '@/lib/supabase';
-import schemesJson from '@/data/schemes.json';
 
 const TABLE = 'schemes';
-
-// ── Category / State Mappings ──
-const categoryMap = {
-    'Health': 'health', 'Education': 'education', 'Agriculture': 'agriculture',
-    'Women Empowerment': 'women-empowerment', 'MSME': 'msme', 'Startup': 'startup',
-    'Housing': 'housing', 'Pension': 'pension-scheme', 'Skill Development': 'skill-development',
-    'Disability': 'disability', 'Minority': 'minority', 'Tribal Welfare': 'tribal-welfare',
-    'Youth': 'youth', 'Digital India': 'digital-india',
-};
-
-const stateIdMap = {
-    'All India': 'central', 'Gujarat': 'gujarat', 'Maharashtra': 'maharashtra',
-    'Rajasthan': 'rajasthan', 'Madhya Pradesh': 'madhyapradesh', 'Uttar Pradesh': 'uttarpradesh',
-    'Tamil Nadu': 'tamilnadu', 'Karnataka': 'karnataka', 'Kerala': 'kerala',
-    'West Bengal': 'westbengal', 'Bihar': 'bihar', 'Odisha': 'odisha',
-    'Andhra Pradesh': 'andhrapradesh', 'Telangana': 'telangana', 'Punjab': 'punjab',
-    'Haryana': 'haryana', 'Jharkhand': 'jharkhand', 'Chhattisgarh': 'chhattisgarh',
-    'Assam': 'assam', 'Himachal Pradesh': 'himachalpradesh', 'Uttarakhand': 'uttarakhand',
-};
-
-// ── Original non-welfare services ──
-const originalServices = [
-    { id: 'epf-balance', name: 'Check EPF Balance', description: 'View your Employee Provident Fund balance and recent contributions', category: 'pensions', eligibility: 'Any EPF member with UAN', documents: ['UAN Number', 'Aadhaar Card'], state: 'central' },
-    { id: 'epf-claim', name: 'EPF Withdrawal Claim', description: 'Submit a claim for EPF withdrawal', category: 'pensions', eligibility: 'EPF members who have left employment', documents: ['UAN Number', 'Bank Account Details', 'Aadhaar Card', 'PAN Card'], state: 'central' },
-    { id: 'pension-status', name: 'Pension Status Check', description: 'Check the status of your pension application', category: 'pensions', eligibility: 'Retired employees who have applied for pension', documents: ['PPO Number', 'Aadhaar Card'], state: 'central' },
-    { id: 'atal-pension', name: 'Atal Pension Yojana', description: 'Guaranteed pension scheme for unorganized sector workers', category: 'pensions', eligibility: 'Indian citizens aged 18-40 with bank account', documents: ['Aadhaar Card', 'Bank Account Details', 'Mobile Number'], state: 'central' },
-    { id: 'old-age-pension', name: 'Old Age Pension Scheme', description: 'Monthly pension for senior citizens above 60 years', category: 'pensions', eligibility: 'Citizens above 60 years with income below poverty line', documents: ['Aadhaar Card', 'Age Proof', 'Income Certificate', 'Bank Account'], state: 'central' },
-    { id: 'varishtha-pension', name: 'Varishtha Pension Bima Yojana', description: 'Pension scheme for senior citizens with assured returns', category: 'pensions', eligibility: 'Senior citizens above 60 years', documents: ['Aadhaar Card', 'Age Proof', 'PAN Card', 'Bank Account'], state: 'central' },
-    { id: 'driving-license', name: 'Driving License Application', description: 'Apply for new driving license or renewal', category: 'transport', eligibility: 'Indian citizens above 18 years', documents: ['Aadhaar Card', 'Address Proof', 'Passport Photo', 'Medical Certificate'], state: 'central' },
-    { id: 'vehicle-registration', name: 'Vehicle Registration (RC)', description: 'Register new vehicle or transfer ownership', category: 'transport', eligibility: 'Vehicle owners', documents: ['Invoice', 'Insurance', 'Aadhaar Card', 'Address Proof'], state: 'delhi' },
-    { id: 'international-dl', name: 'International Driving Permit', description: 'Apply for International Driving Permit', category: 'transport', eligibility: 'Valid Indian DL holders travelling abroad', documents: ['Valid DL', 'Passport', 'Passport Photos', 'Travel Documents'], state: 'central' },
-    { id: 'learner-license', name: 'Learner License Application', description: 'Apply for learner driving license', category: 'transport', eligibility: 'Indian citizens above 16 years (for motorcycle without gear)', documents: ['Aadhaar Card', 'Age Proof', 'Passport Photo', 'Address Proof'], state: 'central' },
-    { id: 'vehicle-fitness', name: 'Vehicle Fitness Certificate', description: 'Renew fitness certificate for commercial vehicles', category: 'transport', eligibility: 'Commercial vehicle owners', documents: ['RC Book', 'Insurance', 'Pollution Certificate', 'Tax Receipt'], state: 'central' },
-    { id: 'fastag', name: 'FASTag Application', description: 'Apply for FASTag for electronic toll collection', category: 'transport', eligibility: 'All vehicle owners', documents: ['RC Book', 'Aadhaar Card', 'Passport Photo'], state: 'central' },
-    { id: 'e-challan', name: 'E-Challan Payment', description: 'Pay traffic violation challans online', category: 'transport', eligibility: 'Anyone with pending traffic challan', documents: ['Challan Number', 'Vehicle Number'], state: 'central' },
-    { id: 'electricity-bill', name: 'Pay Electricity Bill', description: 'Pay your electricity bill online', category: 'utilities', eligibility: 'All electricity consumers', documents: ['Consumer Number', 'Bill Copy'], state: 'central' },
-    { id: 'gas-booking', name: 'LPG Gas Booking', description: 'Book LPG cylinder refill online', category: 'utilities', eligibility: 'LPG connection holders', documents: ['Consumer Number', 'Registered Mobile'], state: 'central' },
-    { id: 'water-bill', name: 'Pay Water Bill', description: 'Pay your municipal water bill', category: 'utilities', eligibility: 'All water connection holders', documents: ['Consumer Number'], state: 'maharashtra' },
-    { id: 'new-electricity', name: 'New Electricity Connection', description: 'Apply for new electricity connection', category: 'utilities', eligibility: 'Property owners without electricity connection', documents: ['Property Documents', 'Aadhaar Card', 'NOC from Society', 'Passport Photo'], state: 'central' },
-    { id: 'new-water', name: 'New Water Connection', description: 'Apply for new municipal water connection', category: 'utilities', eligibility: 'Property owners without water connection', documents: ['Property Documents', 'Aadhaar Card', 'Building Plan Approval'], state: 'central' },
-    { id: 'gas-subsidy', name: 'LPG Subsidy Status', description: 'Check LPG subsidy credit status', category: 'utilities', eligibility: 'LPG consumers enrolled in DBTL', documents: ['LPG Consumer Number', 'Aadhaar Number'], state: 'central' },
-    { id: 'piped-gas', name: 'PNG Connection Application', description: 'Apply for Piped Natural Gas connection', category: 'utilities', eligibility: 'Residents in PNG service areas', documents: ['Property Documents', 'Aadhaar Card', 'NOC', 'Passport Photo'], state: 'central' },
-    { id: 'income-tax', name: 'File Income Tax Return', description: 'File your annual income tax return online', category: 'tax-finance', eligibility: 'All taxpayers', documents: ['PAN Card', 'Aadhaar Card', 'Form 16', 'Bank Statements'], state: 'central' },
-    { id: 'jan-dhan', name: 'Jan Dhan Account', description: 'Open zero-balance bank account under PMJDY', category: 'tax-finance', eligibility: 'Indian citizens without bank account', documents: ['Aadhaar Card', 'Passport Photo'], state: 'central' },
-    { id: 'nps', name: 'National Pension System', description: 'Open NPS account for retirement savings', category: 'tax-finance', eligibility: 'Indian citizens aged 18-65', documents: ['Aadhaar Card', 'PAN Card', 'Bank Account Details'], state: 'central' },
-    { id: 'pan-card', name: 'PAN Card Application', description: 'Apply for new PAN card or correction', category: 'tax-finance', eligibility: 'All Indian citizens and entities', documents: ['Aadhaar Card', 'Passport Photo', 'Address Proof'], state: 'central' },
-    { id: 'gst-registration', name: 'GST Registration', description: 'Register for Goods and Services Tax', category: 'tax-finance', eligibility: 'Businesses with turnover above threshold', documents: ['PAN Card', 'Aadhaar Card', 'Business Proof', 'Bank Account', 'Photos'], state: 'central' },
-    { id: 'pm-svanidhi', name: 'PM SVANidhi Scheme', description: 'Micro loans for street vendors', category: 'tax-finance', eligibility: 'Street vendors with certificate of vending', documents: ['Vending Certificate', 'Aadhaar Card', 'Bank Account', 'Passport Photo'], state: 'central' },
-    { id: 'stand-up-india', name: 'Stand Up India Loan', description: 'Loans for SC/ST and women entrepreneurs', category: 'tax-finance', eligibility: 'SC/ST/Women entrepreneurs above 18 years', documents: ['Caste Certificate', 'Business Plan', 'Aadhaar Card', 'Bank Statements'], state: 'central' },
-    { id: 'ppf', name: 'Public Provident Fund Account', description: 'Long-term savings with tax benefits', category: 'tax-finance', eligibility: 'All Indian citizens', documents: ['Aadhaar Card', 'PAN Card', 'Passport Photo', 'Address Proof'], state: 'central' },
-    { id: 'tax-refund', name: 'Income Tax Refund Status', description: 'Check status of your income tax refund', category: 'tax-finance', eligibility: 'Taxpayers who have filed returns', documents: ['PAN Card', 'Acknowledgment Number'], state: 'central' },
-    { id: 'property-tax', name: 'Pay Property Tax', description: 'Pay your municipal property tax online', category: 'tax-finance', eligibility: 'All property owners', documents: ['Property ID', 'Previous Receipt'], state: 'central' },
-];
-
-// ── Transform JSON schemes into app format ──
-function transformScheme(scheme) {
-
-    // We stringify complex objects to store in simple text/jsonb columns easily, or just send them.
-    // Supabase can handle JSON fields, but let's conform to the existing structure where possible.
-    return {
-        // use scheme_id as a unique identifier property (we let Supabase generate its own PK `id` if needed, 
-        // but we'll use this `id` as a natural key or map it)
-        id: scheme.scheme_id.toLowerCase(),
-        name: scheme.scheme_name,
-        description: scheme.benefits.financial_assistance || '',
-        category: categoryMap[scheme.category] || scheme.category.toLowerCase().replace(/\s+/g, '-'),
-        state: stateIdMap[scheme.state] || scheme.state.toLowerCase().replace(/\s+/g, ''),
-        eligibility: `${scheme.target_beneficiaries} | ${scheme.age_criteria} | Income limit: ${scheme.income_limit}`,
-        // Stringify arrays/objects if the table expects text, but we defined it as text with default in SQL.
-        // Actually, JSONB for complex objects if we altered it, but it was text. We'll stringify array-like things 
-        // or just pass them if it's acceptable. For simplicity, we just pass the string form.
-        documents_required: JSON.stringify(scheme.required_documents),
-        // we map some custom json fields to text for searching
-        government_level: scheme.government_level,
-        target_beneficiaries: scheme.target_beneficiaries,
-        benefits: JSON.stringify(scheme.benefits),
-        application_process: scheme.application_mode,
-        status: 'active',
-    };
-}
-
-function buildSeedData() {
-    const transformed = schemesJson.map(transformScheme);
-    const withStatus = originalServices.map(s => ({
-        id: s.id,
-        name: s.name,
-        description: s.description,
-        category: s.category,
-        state: s.state,
-        eligibility: s.eligibility,
-        documents_required: JSON.stringify(s.documents),
-        status: 'active'
-    }));
-    return [...withStatus, ...transformed];
-}
 
 // ── In-memory cache ──
 let _cache = null;
@@ -120,32 +24,9 @@ function invalidateCache() {
 // ── Public API ──
 const SchemeService = {
     /**
-     * Seed Supabase with initial scheme data.
+     * Legacy seed method — now just ensures data exists or performs initial fetch.
      */
     async seed() {
-        const { data: existing, error: countError } = await supabase
-            .from(TABLE)
-            .select('id')
-            .limit(1);
-
-        if (countError) {
-            console.error('Error fetching schemes for seed check:', countError);
-            return [];
-        }
-
-        if (!existing || existing.length === 0) {
-            const seedData = buildSeedData();
-            // batch insert
-            const { error: insertError } = await supabase
-                .from(TABLE)
-                .insert(seedData);
-
-            if (insertError) {
-                console.error('Error seeding schemes:', insertError);
-            } else {
-                invalidateCache();
-            }
-        }
         return this.getAll();
     },
 
@@ -156,7 +37,7 @@ const SchemeService = {
         const { data, error } = await supabase
             .from(TABLE)
             .select('*')
-            .order('created_at', { ascending: false });
+            .order('name', { ascending: true });
 
         if (error) {
             console.error('SchemeService.getAll error:', error);
@@ -170,33 +51,78 @@ const SchemeService = {
 
     /** Only active schemes */
     async getAllActive() {
-        const all = await this.getAll();
-        return all.filter(s => s.status === 'active');
+        if (isCacheValid()) {
+            return _cache.filter(s => s.status === 'active');
+        }
+
+        const { data, error } = await supabase
+            .from(TABLE)
+            .select('*')
+            .eq('status', 'active')
+            .order('name', { ascending: true });
+
+        if (error) {
+            console.error('SchemeService.getAllActive error:', error);
+            return [];
+        }
+        return data || [];
     },
 
-    /** Get a single scheme by its natural `id` field */
+    /** Get a single scheme by its primary UUID `id` */
     async getById(id) {
-        const all = await this.getAll();
-        return all.find(s => s.id === id) || null;
+        const { data, error } = await supabase
+            .from(TABLE)
+            .select('*')
+            .eq('id', id)
+            .single();
+
+        if (error) {
+            console.error(`SchemeService.getById(${id}) error:`, error);
+            return null;
+        }
+        return data;
+    },
+
+    /** Get a single scheme by its unique `slug` */
+    async getBySlug(slug) {
+        const { data, error } = await supabase
+            .from(TABLE)
+            .select('*')
+            .eq('slug', slug)
+            .single();
+
+        if (error) {
+            console.error(`SchemeService.getBySlug(${slug}) error:`, error);
+            return null;
+        }
+        return data;
+    },
+
+    /** Get featured schemes */
+    async getFeatured(limit = 6) {
+        const { data, error } = await supabase
+            .from(TABLE)
+            .select('*')
+            .eq('is_featured', true)
+            .eq('status', 'active')
+            .limit(limit);
+
+        if (error) {
+            console.error('SchemeService.getFeatured error:', error);
+            return [];
+        }
+        return data || [];
     },
 
     /** Add a scheme */
     async add(schemeData) {
         try {
-            const all = await this.getAll();
-            if (all.some(s => s.name.toLowerCase() === schemeData.name.toLowerCase())) {
-                return { success: false, error: 'A scheme with this name already exists' };
-            }
-
-            const newScheme = {
-                ...schemeData,
-                id: schemeData.id || `scheme-${Date.now()}`,
-                status: schemeData.status || 'active',
-            };
-
             const { data, error } = await supabase
                 .from(TABLE)
-                .insert(newScheme)
+                .insert([{
+                    ...schemeData,
+                    status: schemeData.status || 'active'
+                }])
                 .select()
                 .single();
 
@@ -209,17 +135,9 @@ const SchemeService = {
         }
     },
 
-    /** Update a scheme by its `id` field */
+    /** Update a scheme by its `id` */
     async update(id, updates) {
         try {
-            const all = await this.getAll();
-            const existing = all.find(s => s.id === id);
-            if (!existing) return { success: false, error: 'Scheme not found' };
-
-            if (updates.name && all.some(s => s.id !== id && s.name.toLowerCase() === updates.name.toLowerCase())) {
-                return { success: false, error: 'A scheme with this name already exists' };
-            }
-
             const { data, error } = await supabase
                 .from(TABLE)
                 .update({ ...updates, updated_at: new Date().toISOString() })
@@ -255,36 +173,64 @@ const SchemeService = {
 
     /** Toggle active/inactive */
     async toggleStatus(id) {
-        const all = await this.getAll();
-        const existing = all.find(s => s.id === id);
-        if (!existing) return { success: false, error: 'Scheme not found' };
+        const { data: existing, error: fetchError } = await supabase
+            .from(TABLE)
+            .select('status')
+            .eq('id', id)
+            .single();
+
+        if (fetchError || !existing) return { success: false, error: 'Scheme not found' };
 
         const newStatus = existing.status === 'active' ? 'inactive' : 'active';
         return this.update(id, { status: newStatus });
     },
 
-    /** Search schemes */
-    async search(queryStr) {
-        const lower = queryStr.toLowerCase();
-        const all = await this.getAll();
-        return all.filter(s =>
-            (s.name && s.name.toLowerCase().includes(lower)) ||
-            (s.description && s.description.toLowerCase().includes(lower)) ||
-            (s.category && s.category.toLowerCase().includes(lower)) ||
-            (s.target_beneficiaries && s.target_beneficiaries.toLowerCase().includes(lower)) ||
-            (s.government_level && s.government_level.toLowerCase().includes(lower))
-        );
+    /** Search schemes (Server-side) with pagination */
+    async search(queryStr, page = 1, limit = 12) {
+        const from = (page - 1) * limit;
+        const to = from + limit - 1;
+
+        const { data, error, count } = await supabase
+            .from(TABLE)
+            .select('*', { count: 'exact' })
+            .or(`name.ilike.%${queryStr}%,description.ilike.%${queryStr}%,category.ilike.%${queryStr}%`)
+            .eq('status', 'active')
+            .order('name', { ascending: true })
+            .range(from, to);
+
+        if (error) {
+            console.error('SchemeService.search error:', error);
+            return { data: [], count: 0 };
+        }
+        return { data: data || [], count: count || 0 };
     },
 
-    /** Filter by category and/or state */
-    async filter(filters) {
-        const all = await this.getAll();
-        return all.filter(s => {
-            if (filters.category && s.category !== filters.category) return false;
-            if (filters.state && s.state !== filters.state && s.state !== 'central') return false;
-            if (filters.status && s.status !== filters.status) return false;
-            return true;
-        });
+    /** Filter by category and/or state (Server-side) with pagination */
+    async filter(filters, page = 1, limit = 12) {
+        const from = (page - 1) * limit;
+        const to = from + limit - 1;
+
+        let query = supabase.from(TABLE).select('*', { count: 'exact' });
+
+        if (filters.category) query = query.eq('category', filters.category);
+        if (filters.state) {
+            if (filters.state !== 'central') {
+                query = query.or(`state.eq.${filters.state},state.eq.central`);
+            } else {
+                query = query.eq('state', 'central');
+            }
+        }
+        if (filters.status) query = query.eq('status', filters.status);
+
+        const { data, error, count } = await query
+            .order('name', { ascending: true })
+            .range(from, to);
+
+        if (error) {
+            console.error('SchemeService.filter error:', error);
+            return { data: [], count: 0 };
+        }
+        return { data: data || [], count: count || 0 };
     },
 
     invalidateCache,

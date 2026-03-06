@@ -127,7 +127,7 @@ const Register = () => {
             <CardTitle className="text-2xl">{t('register') || 'Create an Account'}</CardTitle>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
               <div>
                 <label className="text-sm font-medium text-foreground mb-1.5 block">Full Name *</label>
                 <Input {...register('fullName')} placeholder="Enter your full name" />
@@ -144,7 +144,7 @@ const Register = () => {
                 <label className="text-sm font-medium text-foreground mb-1.5 block">Password *</label>
                 <div className="relative">
                   <Input {...register('password')} type={showPassword ? 'text' : 'password'} placeholder="Min 8 characters" />
-                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                  <button type="button" aria-label="toggle password visibility" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
                     {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
                 </div>
@@ -165,7 +165,7 @@ const Register = () => {
                 <label className="text-sm font-medium text-foreground mb-1.5 block">Confirm Password *</label>
                 <div className="relative">
                   <Input {...register('confirmPassword')} type={showConfirmPassword ? 'text' : 'password'} placeholder="Confirm your password" />
-                  <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                  <button type="button" aria-label="toggle confirm password visibility" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
                     {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
                 </div>
@@ -173,8 +173,8 @@ const Register = () => {
               </div>
 
               <div>
-                <label className="text-sm font-medium text-foreground mb-1.5 block">State *</label>
-                <select {...register('state')} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                <label htmlFor="state" className="text-sm font-medium text-foreground mb-1.5 block">State *</label>
+                <select id="state" {...register('state')} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
                   <option value="">Select your state</option>
                   {states.map(s => (
                     <option key={s.id} value={s.id}>{s.name}</option>

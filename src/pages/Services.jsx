@@ -10,7 +10,6 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { useAuthStore } from '@/lib/store';
 import { useSchemeStore, serviceCategories, states } from '@/stores/schemeStore';
 
-const ITEMS_PER_PAGE = 24;
 
 const Services = () => {
   const { t } = useTranslation();
@@ -20,7 +19,6 @@ const Services = () => {
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedState, setSelectedState] = useState('');
   const [showFilters, setShowFilters] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
 
   // Pre-fill search from URL query param
   useEffect(() => {
@@ -28,49 +26,76 @@ const Services = () => {
     if (q) setSearchQuery(q);
   }, [searchParams]);
 
-  const { schemes, searchSchemes, filterSchemes } = useSchemeStore();
+  const {
+    searchResults,
+    totalCount,
+    currentPage: storePage,
+    pageSize,
+    loading,
+    searchSchemes,
+    filterSchemes,
+    setPage
+  } = useSchemeStore();
 
-  const displayedServices = useMemo(() => {
-    let result = schemes;
-    if (searchQuery) {
-      result = searchSchemes(searchQuery);
-    } else if (selectedCategory || selectedState) {
-      result = filterSchemes({
+  const [debouncedSearch, setDebouncedSearch] = useState(searchQuery);
+
+  // Load schemes on mount — initial page 1
+  useEffect(() => {
+    filterSchemes({}, 1);
+  }, [filterSchemes]);
+
+  // Debounce search query
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Handle Search and Filter logic with Pagination
+  useEffect(() => {
+    if (debouncedSearch) {
+      searchSchemes(debouncedSearch, storePage);
+    } else {
+      filterSchemes({
         category: selectedCategory || undefined,
         state: selectedState || undefined,
-      });
+      }, storePage);
     }
-    return result;
-  }, [searchQuery, selectedCategory, selectedState, schemes, searchSchemes, filterSchemes]);
+  }, [debouncedSearch, selectedCategory, selectedState, storePage, searchSchemes, filterSchemes]);
 
-  const totalPages = Math.ceil(displayedServices.length / ITEMS_PER_PAGE);
-  const paginatedServices = displayedServices.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE
-  );
+  const totalPages = Math.ceil(totalCount / pageSize);
+  const paginatedServices = searchResults;
 
-  // Compute counts per category for badges
+  // Compute counts per category for badges — we still need a bulk list or a specific API for counts
+  // For now, we'll keep using schemes list if it's loaded, but it might only be a page.
+  // TODO: Add a specific "getCategoryCounts" if Supabase has many records.
   const categoryCounts = useMemo(() => {
     const counts = {};
-    schemes.forEach(s => {
-      counts[s.category] = (counts[s.category] || 0) + 1;
-    });
+    // This will only be accurate if schemes contains all, but with server-side pagination it won't.
+    // For MVP, we'll assume category counts are less critical or handle separately.
     return counts;
-  }, [schemes]);
+  }, []);
 
-  // Reset page on any filter/search change
+  // Reset page on any search query CHANGE (not page change)
   const handleSearchChange = (e) => {
     setSearchQuery(e.target.value);
-    setCurrentPage(1);
+    setPage(1);
   };
   const handleCategoryChange = (cat) => {
-    setSelectedCategory(cat === selectedCategory ? '' : cat);
-    setCurrentPage(1);
+    const newCat = cat === selectedCategory ? '' : cat;
+    setSelectedCategory(newCat);
+    setPage(1);
     setSearchQuery('');
   };
   const handleStateChange = (e) => {
     setSelectedState(e.target.value);
-    setCurrentPage(1);
+    setPage(1);
+  };
+
+  const handlePageChange = (p) => {
+    setPage(p);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   if (isAuthChecking) {
@@ -88,7 +113,7 @@ const Services = () => {
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2">{t('services')}</h1>
-        <p className="text-muted-foreground">{t('browse')} {schemes.length}+ {t('governmentSchemes')}</p>
+        <p className="text-muted-foreground">{t('browse')} {totalCount} {t('governmentSchemes')}</p>
       </div>
 
       {/* Search & Filter Bar */}
@@ -157,7 +182,7 @@ const Services = () => {
       {/* Results Header */}
       <div className="flex items-center justify-between mb-4">
         <p className="text-sm text-muted-foreground">
-          {t('showing')} {paginatedServices.length} {t('of')} {displayedServices.length} {t('servicesText')}
+          {t('showing')} {paginatedServices.length} {t('of')} {totalCount} {t('servicesText')}
           {selectedCategory && ` in ${selectedCategory.replace(/-/g, ' ')}`}
           {selectedState && ` for ${states.find(s => s.id === selectedState)?.name || selectedState}`}
         </p>
@@ -169,18 +194,27 @@ const Services = () => {
       </div>
 
       {/* Service Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {paginatedServices.map((service) => (
-          <ServiceCard key={service.id} service={service} />
-        ))}
-      </div>
-
-      {/* Empty State */}
-      {displayedServices.length === 0 && (
-        <div className="text-center py-16">
-          <p className="text-muted-foreground text-lg mb-2">{t('noServicesFound')}</p>
-          <p className="text-sm text-muted-foreground">{t('tryAdjustingSearch')}</p>
+      {loading ? (
+        <div className="flex flex-col items-center justify-center py-20">
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent mb-4" />
+          <p className="text-muted-foreground">{t('loading')}...</p>
         </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {paginatedServices.map((service) => (
+              <ServiceCard key={service.id} service={service} />
+            ))}
+          </div>
+
+          {/* Empty State */}
+          {displayedServices.length === 0 && (
+            <div className="text-center py-16">
+              <p className="text-muted-foreground text-lg mb-2">{t('noServicesFound')}</p>
+              <p className="text-sm text-muted-foreground">{t('tryAdjustingSearch')}</p>
+            </div>
+          )}
+        </>
       )}
 
       {/* Pagination */}
@@ -189,8 +223,8 @@ const Services = () => {
           <Button
             variant="outline"
             size="sm"
-            disabled={currentPage === 1}
-            onClick={() => setCurrentPage(p => p - 1)}
+            disabled={storePage === 1}
+            onClick={() => handlePageChange(storePage - 1)}
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
@@ -198,19 +232,19 @@ const Services = () => {
             let page;
             if (totalPages <= 7) {
               page = i + 1;
-            } else if (currentPage <= 4) {
+            } else if (storePage <= 4) {
               page = i + 1;
-            } else if (currentPage >= totalPages - 3) {
+            } else if (storePage >= totalPages - 3) {
               page = totalPages - 6 + i;
             } else {
-              page = currentPage - 3 + i;
+              page = storePage - 3 + i;
             }
             return (
               <Button
                 key={page}
-                variant={currentPage === page ? 'default' : 'outline'}
+                variant={storePage === page ? 'default' : 'outline'}
                 size="sm"
-                onClick={() => setCurrentPage(page)}
+                onClick={() => handlePageChange(page)}
                 className="w-9"
               >
                 {page}
@@ -220,8 +254,8 @@ const Services = () => {
           <Button
             variant="outline"
             size="sm"
-            disabled={currentPage === totalPages}
-            onClick={() => setCurrentPage(p => p + 1)}
+            disabled={storePage === totalPages}
+            onClick={() => handlePageChange(storePage + 1)}
           >
             <ChevronRight className="h-4 w-4" />
           </Button>

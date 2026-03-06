@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useParams, Navigate, Link } from 'react-router-dom';
-import { ArrowLeft, FileText, Upload, CheckCircle, Clock, Calendar, Globe, IndianRupee, Users, Shield, Wifi, Mic, FolderLock } from 'lucide-react';
+import { ArrowLeft, FileText, Upload, CheckCircle, Globe, IndianRupee, Users, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';

@@ -69,9 +69,26 @@ export default defineConfig(({ mode }) => ({
             }
         })
     ],
+    build: {
+        rollupOptions: {
+            output: {
+                manualChunks: {
+                    'vendor': ['react', 'react-dom', 'react-router-dom', '@tanstack/react-query'],
+                    'ui': ['lucide-react', 'clsx', 'tailwind-merge'],
+                    'supabase': ['@supabase/supabase-js'],
+                    'store': ['zustand']
+                }
+            }
+        }
+    },
     resolve: {
         alias: {
             "@": path.resolve(__dirname, "./src"),
         },
     },
+    test: {
+        environment: 'jsdom',
+        setupFiles: ['./src/test/setup.js'],
+        globals: true
+    }
 }));

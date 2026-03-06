@@ -63,41 +63,65 @@ function getAdmin() {
 
 export const useSchemeStore = create((set, get) => ({
     schemes: [],
+    searchResults: [],
+    totalCount: 0,
+    pageSize: 12,
+    currentPage: 1,
+    loading: false,
     loaded: false,
+    error: null,
 
     loadSchemes: async () => {
-        const data = await SchemeService.seed();
-        set({ schemes: data || [], loaded: true });
+        if (get().loaded) return;
+        set({ loading: true, error: null });
+        try {
+            const { data, count } = await SchemeService.filter({}, 1, 1000); // legacy bulk load if needed
+            set({ schemes: data || [], totalCount: count || 0, loaded: true });
+        } catch (err) {
+            set({ error: err.message });
+        } finally {
+            set({ loading: false });
+        }
     },
 
     refresh: async () => {
-        const data = await SchemeService.getAll();
-        set({ schemes: data });
+        set({ loading: true, error: null });
+        try {
+            const { data, count } = await SchemeService.filter({}, 1, 1000);
+            set({ schemes: data || [], totalCount: count || 0 });
+        } catch (err) {
+            set({ error: err.message });
+        } finally {
+            set({ loading: false });
+        }
     },
 
     // ── Getters ──
     getAllActive: () => get().schemes.filter(s => s.status === 'active'),
     getById: (id) => get().schemes.find(s => s.id === id) || null,
+    getBySlug: (slug) => get().schemes.find(s => s.slug === slug) || null,
 
-    searchSchemes: (query) => {
-        const lower = query.toLowerCase();
-        return get().schemes.filter(s =>
-            s.name.toLowerCase().includes(lower) ||
-            s.description.toLowerCase().includes(lower) ||
-            s.category.toLowerCase().includes(lower) ||
-            (s.targetBeneficiaries && s.targetBeneficiaries.toLowerCase().includes(lower)) ||
-            (s.governmentLevel && s.governmentLevel.toLowerCase().includes(lower))
-        );
+    // ── Server-side Operations with Pagination ──
+    searchSchemes: async (query, page = 1) => {
+        if (!query) {
+            set({ searchResults: [], totalCount: 0, currentPage: 1 });
+            return;
+        }
+        set({ loading: true, currentPage: page });
+        const { data, count } = await SchemeService.search(query, page, get().pageSize);
+        set({ searchResults: data, totalCount: count, loading: false });
+        return { data, count };
     },
 
-    filterSchemes: (filters) => {
-        return get().schemes.filter(s => {
-            if (filters.category && s.category !== filters.category) return false;
-            if (filters.state && s.state !== filters.state && s.state !== 'central') return false;
-            if (filters.status && s.status !== filters.status) return false;
-            return true;
-        });
+    filterSchemes: async (filters, page = 1) => {
+        set({ loading: true, currentPage: page });
+        const { data, count } = await SchemeService.filter(filters, page, get().pageSize);
+        set({ searchResults: data, totalCount: count, loading: false });
+        return { data, count };
     },
+
+    setPage: (page) => set({ currentPage: page }),
+    setPageSize: (size) => set({ pageSize: size }),
 
     // ── Admin Mutations (with audit logging) ──
     addScheme: async (data) => {

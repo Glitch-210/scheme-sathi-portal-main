@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, ArrowRight, Sparkles, TrendingUp } from 'lucide-react';
-import { searchServices, serviceCategories } from '@/lib/services';
+import { serviceCategories } from '@/lib/services';
+import SchemeService from '@/services/SchemeService';
 
 const trendingSearches = [
     'Kisan Yojana',
@@ -16,6 +17,7 @@ const HeroSearch = () => {
     const [query, setQuery] = useState('');
     const [results, setResults] = useState([]);
     const [isFocused, setIsFocused] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
     const [activeIndex, setActiveIndex] = useState(-1);
     const [placeholderIdx, setPlaceholderIdx] = useState(0);
     const inputRef = useRef(null);
@@ -38,17 +40,24 @@ const HeroSearch = () => {
         return () => clearInterval(interval);
     }, []);
 
-    // Debounced search
+    // Debounced search using SchemeService
     useEffect(() => {
         if (query.trim().length < 2) {
             setResults([]);
             return;
         }
-        const timer = setTimeout(() => {
-            const matched = searchServices(query).slice(0, 6);
-            setResults(matched);
+        const timer = setTimeout(async () => {
+            setIsLoading(true);
+            try {
+                const matched = await SchemeService.search(query);
+                setResults(matched.slice(0, 6));
+            } catch (error) {
+                console.error('Search error:', error);
+            } finally {
+                setIsLoading(false);
+            }
             setActiveIndex(-1);
-        }, 200);
+        }, 300);
         return () => clearTimeout(timer);
     }, [query]);
 
@@ -69,7 +78,7 @@ const HeroSearch = () => {
     const handleSubmit = useCallback((e) => {
         e?.preventDefault();
         if (activeIndex >= 0 && results[activeIndex]) {
-            navigate(`/service/${results[activeIndex].id}`);
+            navigate(`/schemes/${results[activeIndex].slug}`);
         } else if (query.trim()) {
             navigate(`/services?q=${encodeURIComponent(query.trim())}`);
         }
@@ -92,7 +101,7 @@ const HeroSearch = () => {
         }
     };
 
-    const showDropdown = isFocused && (results.length > 0 || query.trim().length < 2);
+    const showDropdown = isFocused && (results.length > 0 || isLoading || query.trim().length < 2);
 
     return (
         <div className="hero-search-wrapper">
@@ -124,7 +133,12 @@ const HeroSearch = () => {
                 {/* Dropdown */}
                 {showDropdown && (
                     <div ref={dropdownRef} className="hero-search-dropdown">
-                        {results.length > 0 ? (
+                        {isLoading ? (
+                            <div className="p-4 text-center text-sm text-muted-foreground">
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary mx-auto mb-2"></div>
+                                Searching...
+                            </div>
+                        ) : results.length > 0 ? (
                             <>
                                 <div className="hero-dropdown-header">
                                     <Sparkles className="h-3.5 w-3.5" />
@@ -136,17 +150,17 @@ const HeroSearch = () => {
                                         type="button"
                                         className={`hero-dropdown-item ${idx === activeIndex ? 'active' : ''}`}
                                         onClick={() => {
-                                            navigate(`/service/${result.id}`);
+                                            navigate(`/schemes/${result.slug}`);
                                             setIsFocused(false);
                                         }}
                                         onMouseEnter={() => setActiveIndex(idx)}
                                     >
                                         <div className="hero-dropdown-item-left">
-                                            <span className="hero-dropdown-item-name">{result.name}</span>
+                                            <span className="hero-dropdown-item-name">{result.title}</span>
                                             <span className="hero-dropdown-item-meta">
-                                                {result.governmentLevel && (
-                                                    <span className={`hero-dropdown-badge ${result.governmentLevel === 'Central' ? 'central' : 'state'}`}>
-                                                        {result.governmentLevel}
+                                                {result.state && (
+                                                    <span className={`hero-dropdown-badge ${result.state === 'Central' ? 'central' : 'state'}`}>
+                                                        {result.state}
                                                     </span>
                                                 )}
                                                 {result.category.replace(/-/g, ' ')}

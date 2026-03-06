@@ -42,11 +42,15 @@ const Login = () => {
       const result = await login(data.email, data.password);
       if (result.success) {
         toast.success('Login successful!');
-        navigate('/dashboard');
+        if (['SUPER_ADMIN', 'CONTENT_ADMIN', 'REVIEW_ADMIN'].includes(result.role)) {
+          navigate('/admin');
+        } else {
+          navigate('/dashboard');
+        }
       } else {
-        toast.error(result.error || 'Invalid credentials');
+        toast.error(result.error || 'Invalid login credentials');
       }
-    } catch (err) {
+    } catch (error) {
       toast.error('An unexpected error occurred');
     }
   };
@@ -65,7 +69,7 @@ const Login = () => {
             <CardDescription>{t('loginDesc') || 'Enter your details below to continue'}</CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
               <div>
                 <label className="text-sm font-medium text-foreground mb-1.5 block">Email *</label>
                 <Input {...register('email')} type="email" placeholder="name@example.com" />
@@ -76,7 +80,7 @@ const Login = () => {
                 <label className="text-sm font-medium text-foreground mb-1.5 block">Password *</label>
                 <div className="relative">
                   <Input {...register('password')} type={showPassword ? 'text' : 'password'} placeholder="••••••••" />
-                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                  <button type="button" aria-label="toggle password visibility" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
                     {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
                 </div>

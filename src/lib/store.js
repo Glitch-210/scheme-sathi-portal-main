@@ -134,7 +134,7 @@ export const useAuthStore = create()(persist((set, get) => ({
                 isAuthenticated: true,
                 session: data.session,
             });
-            return { success: true };
+            return { success: true, role: profile?.role || 'USER' };
         } catch (err) {
             if (import.meta.env.DEV) console.error('Login error:', err);
             return { success: false, error: err.message };
